@@ -82,7 +82,7 @@ are returned. For example:
 
 ```
 $ compiled/exercise_3_O0
-Enter matrix dimensions of first matrix:
+ Enter matrix dimensions of first matrix:
 10, 10
  Enter matrix dimensions of second matrix:
 10, 10
