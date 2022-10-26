@@ -13,10 +13,13 @@ contains
         sum = x + y
         print *, 'The sum of ', x, 'and', y, 'using INTEGER*4 is', sum
     end subroutine sum_int_4
+
 end module different_sums
 
-program addition
-use different_sums
+
+program exercise_2
+    use different_sums
+
     integer n_1, n_2
     integer*2 x, y
     integer*4 x_2, y_2
@@ -44,4 +47,4 @@ use different_sums
     sum_1 = num_1 + num_2
     print *, pi, num_1, num_2, sum_1
 
-end program addition
+end program

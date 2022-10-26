@@ -1,2 +1,2 @@
-# Quantum Information
-Repository for solving quantum systems in Python and Fortran
+# Quantum Information and Computing
+Repository containing solutions to assignments for the course "Quantum Information and Computing" at the University of Padua
