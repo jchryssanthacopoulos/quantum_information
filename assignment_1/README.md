@@ -101,3 +101,30 @@ jupyter notebook src/plot_exercise_3.ipynb
 Here's an example plot of run time versus matrix size without optimization:
 
 ![image](example_run_times.png)
+
+
+## Running on CloudVeneto
+
+To run the code on CloudVeneto, you first need an account. After obtaining one, follow the instructions [here](https://userguide.cloudveneto.it/en/latest/GettingStarted.html#) to set up a keypair, which is a secret key for interacting with a virtual machine after you create it. If you already have an SSH
+key, you can import it instead. Then follow the instructions for creating a virtual machine.
+
+You can only log into your virtual machine by SSHing into the gateway. Before doing that, copy your private SSH key
+onto the gateway machine. For example, to copy it to the root directory, type:
+
+```
+scp /path/to/private/key [username]@gate.cloudveneto.it:~
+```
+
+Then SSH into the gateway using your username and password:
+
+```
+ssh [username]@gate.cloudveneto.it
+```
+
+From there, you can SSH into your VM:
+
+```
+ssh -i /path/to/private/key ubuntu@[VM_IP_address]
+```
+
+where `[VM_IP_address]` can be found on the web dashboard.
