@@ -1,5 +1,7 @@
 ! define modules
 module first_module
+    implicit none
+
     real*8 var1, var2
 
     contains

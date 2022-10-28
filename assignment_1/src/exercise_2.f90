@@ -17,6 +17,8 @@ program exercise_2
     print "('The sum of ', i7, ' and ', i1, ' using INTEGER*4 is ', i7)", int1_4, int2_4, int1_4 + int2_4
 
     ! sum using real*4
+    ! pi is calculated trigonometrically based on suggestion in
+    ! https://stackoverflow.com/questions/2157920/why-define-pi-4atan1-d0
     real1_4 = 4e0*atan(1e0)*1e32
     real2_4 = sqrt(2e0)*1e21
     print "('The sum of ', es14.8, ' and ', es14.8, ' using REAL*4 is ', es14.8)", real1_4, real2_4, real1_4 + real2_4

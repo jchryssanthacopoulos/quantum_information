@@ -72,6 +72,8 @@ program exercise_3
     deallocate(matrix1, matrix2, matrix3, matrix4, matrix5)
 
 contains
+    ! this subroutine was adapted from one in this reference:
+    ! https://math.hawaii.edu/~gautier/math_190_lecture_11.pdf
     subroutine print_matrix(b, n, m)
         integer*4 :: n, m
         real*8 :: b(n, m)

@@ -75,7 +75,7 @@ To run the program, type:
 ```
 compiled/exercise_3_[opt_flag]
 ```
-where `[opt_flag]` can be `O0`, `O1`, `02`, `03`, `0s`, or `Ofast`.
+where `[opt_flag]` can be `O0`, `O1`, `02`, `03`, `0s`, or `Ofast`. More information on optimization flags can be found [here](https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html).
 
 This program multiplies two matrices using different methods. Enter the size of the input matrices, and the run times
 are returned. For example:
@@ -101,7 +101,6 @@ jupyter notebook src/plot_exercise_3.ipynb
 Here's an example plot of run time versus matrix size without optimization:
 
 ![image](example_run_times.png)
-
 
 ## Running on CloudVeneto
 
