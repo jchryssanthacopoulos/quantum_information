@@ -42,7 +42,7 @@ program exercise_3
             end do
         end do
     call cpu_time(finish)
-    print "('Elapsed time for custom method 1 = ', f11.9)", finish - start
+    print "('Elapsed time for row-col-inner = ', es15.9)", finish - start
 
     call cpu_time(start)
         do k = 1, n_2
@@ -53,12 +53,12 @@ program exercise_3
             end do
         end do
     call cpu_time(finish)
-    print "('Elapsed time for custom method 2 = ', f11.9)", finish - start
+    print "('Elapsed time for inner-col-row = ', es15.9)", finish - start
 
     call cpu_time(start)
         matrix5 = matmul(matrix1, matrix2)
     call cpu_time(finish)
-    print "('Elapsed time for intrinsic method = ', f11.9)", finish - start
+    print "('Elapsed time for matmul = ', es15.9)", finish - start
 
     ! display results
     ! print *, "Custom 1: A*B ="

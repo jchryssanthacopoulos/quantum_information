@@ -86,9 +86,9 @@ $ compiled/exercise_3_O0
 10, 10
  Enter matrix dimensions of second matrix:
 10, 10
-Elapsed time for custom method 1 = 0.000020000
-Elapsed time for custom method 2 = 0.000011000
-Elapsed time for intrinsic method = 0.000026000
+Elapsed time for row-col-inner = 1.800000000E-05
+Elapsed time for inner-col-row = 1.000000000E-05
+Elapsed time for matmul = 3.520000000E-04
 ```
 
 To plot the run times for the different matrix multiplication methods as a function of the input matrix size, open
@@ -97,3 +97,7 @@ the Jupyter notebook `src/plot_exercise_3.ipynb` in your IDE, or start a Jupyter
 ```
 jupyter notebook src/plot_exercise_3.ipynb
 ```
+
+Here's an example plot of run time versus matrix size without optimization:
+
+![image](plots/matmul_run_times_O0.pdf}
