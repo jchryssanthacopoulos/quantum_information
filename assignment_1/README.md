@@ -100,4 +100,4 @@ jupyter notebook src/plot_exercise_3.ipynb
 
 Here's an example plot of run time versus matrix size without optimization:
 
-![alt text](plots/matmul_run_times_O0.pdf)
+![image](plots/matmul_run_times_O0.pdf)
