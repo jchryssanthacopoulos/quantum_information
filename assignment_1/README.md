@@ -82,13 +82,13 @@ are returned. For example:
 
 ```
 $ compiled/exercise_3_O0
- Enter matrix dimensions of first matrix:
-10, 10
- Enter matrix dimensions of second matrix:
-10, 10
-Elapsed time for row-col-inner = 1.800000000E-05
-Elapsed time for inner-col-row = 1.000000000E-05
-Elapsed time for matmul = 3.520000000E-04
+ Enter number of rows, columns, and inner dimension:
+10, 10, 10
+Elapsed time for matmul = 3.3100000000E-04
+Max abs error for row-col-inner = 8.8817841970E-16
+Elapsed time for row-col-inner = 8.0000000000E-06
+Max abs error for inner-col-row = 8.8817841970E-16
+Elapsed time for inner-col-row = 7.0000000000E-06
 ```
 
 To plot the run times for the different matrix multiplication methods as a function of the input matrix size, open
