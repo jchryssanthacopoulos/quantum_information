@@ -31,6 +31,8 @@ program exercise_3
     matrix3 = 0.0
     matrix4 = 0.0
 
+    ! multiply matrices using two different loop orders
+
     call cpu_time(start)
         do i = 1, n_1
             do j = 1, n_2
@@ -59,16 +61,6 @@ program exercise_3
     deallocate(matrix1, matrix2, matrix3, matrix4, matrix5)
 
 contains
-    ! this subroutine was adapted from one in this reference:
-    ! https://math.hawaii.edu/~gautier/math_190_lecture_11.pdf
-    subroutine print_matrix(b, n, m)
-        integer*4 :: n, m
-        real*8 :: b(n, m)
-        do i = 1, n
-            print '(20f7.2)', b(i, 1:m)
-        end do
-    end subroutine
-
     ! display maximum absolute error between two matrices
     function max_abs_error(a, b, nrows, ncols)
         integer*4 nrows, ncols, cnt
