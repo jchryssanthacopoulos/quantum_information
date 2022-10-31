@@ -20,6 +20,8 @@ program exercise_1
 
     if (verbose) then
         call checkpoint(a, b)
+    else
+        print *, "Nothing to print. Exiting ..."
     end if
 
 contains
