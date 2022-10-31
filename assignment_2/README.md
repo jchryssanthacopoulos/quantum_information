@@ -49,7 +49,7 @@ If the debug flag is provided, a checkpoint is entered and the values of certain
  Entering checkpoint ...
 Value of variable a is 10
 Value of variable b is 20
-``
+```
 
 ### Exercise 3
 
