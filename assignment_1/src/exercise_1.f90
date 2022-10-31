@@ -6,8 +6,7 @@ module first_module
 
     contains
         function mysqrt(x) result(sx)
-            real*8 x
-            real*8 sx
+            real*8 x, sx
             sx = sqrt(x)
         end function
 
