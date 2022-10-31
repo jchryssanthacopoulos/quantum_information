@@ -51,6 +51,37 @@ Value of variable a is 10
 Value of variable b is 20
 ```
 
+### Exercise 2
+
+To run the program, type:
+
+```
+compiled/exercise_2
+```
+
+This program multiplies two matrices using different methods. Enter the size of the input matrices, and the run times
+are returned. For example:
+
+```
+$ compiled/exercise_2
+ Enter number of rows, columns, and inner dimension:
+10, 10, 10
+Elapsed time for matmul = 3.3100000000E-04
+Max abs error for row-col-inner = 8.8817841970E-16
+Elapsed time for row-col-inner = 8.0000000000E-06
+Max abs error for inner-col-row = 8.8817841970E-16
+Elapsed time for inner-col-row = 7.0000000000E-06
+```
+
+If you provide non-integer inputs, you'll get the following error:
+
+```
+$ compiled/exercise_2
+ Enter number of rows, columns, and inner dimension:
+a b c
+Dimensions need to be integers!
+```
+
 ### Exercise 3
 
 To run the program, type:
