@@ -21,7 +21,7 @@ gfortran $SRC_DIR/exercise_1.f90 -o $DEST_DIR/exercise_1 $EXTRA_ARGS
 ### Compile Exercise 2 ###
 ##########################
 echo "Compiling Exercise 2 ..."
-gfortran $SRC_DIR/exercise_2.f90 -o $DEST_DIR/exercise_2 $EXTRA_ARGS
+gfortran $SRC_DIR/exercise_2.f90 -o $DEST_DIR/exercise_2 -cpp $EXTRA_ARGS
 
 
 ##########################
