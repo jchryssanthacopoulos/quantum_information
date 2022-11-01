@@ -2,7 +2,7 @@
 ! ==========
 !
 ! This program implements two different ways of performing matrix multiplication and compares their results and
-!   and performance against the builtin method, matmul
+!   performance against the builtin method, matmul
 !
 ! Example usage:
 !  $ exercise_2
@@ -30,10 +30,16 @@
 #   define DTYPE REAL
 #endif
 
+! maximum integer to sample when generating integer matrix
+#define MAX_INT_RANGE 100
+
 
 module exercise_2_utils
     implicit none
 
+    character(len=20) char_input(3)
+    integer*4 dims(3)
+    integer status
     logical verbose
 
 contains
@@ -53,35 +59,59 @@ contains
         end do
     end subroutine
 
-    ! print matrix in a nice format
-    subroutine print_matrix(b, n, m)
+    ! initialize matrix with random data depending on data type
+    subroutine init_matrix(M, nrows, ncols)
         implicit none
 
-        integer*4 ii, n, m
+        integer*4 nrows, ncols
 
 #if DTYPE == REAL
-        real*8 b(n, m)
-        do ii = 1, n
-            print '(20f7.2)', b(ii, 1:m)
+        real*8, intent(inout) :: M(nrows, ncols)
+        call random_number(M)
+#elif DTYPE == INT
+        integer*4, intent(inout) :: M(nrows, ncols)
+        integer*4 ii, jj
+        real*8 rand_real
+
+        do ii = 1, nrows
+            do jj = 1, ncols
+                call random_number(rand_real)
+                M(ii, jj) = floor((MAX_INT_RANGE + 1)*rand_real)
+            end do
+        end do
+#endif
+
+    end subroutine
+
+    ! print matrix in a nice format
+    subroutine print_matrix(M, nrows, ncols)
+        implicit none
+
+        integer*4 ii, nrows, ncols
+
+#if DTYPE == REAL
+        real*8 M(nrows, ncols)
+        do ii = 1, nrows
+            print '(20f7.2)', M(ii, 1:ncols)
         end do
 #elif DTYPE == INT
-        integer*4 b(n, m)
-        do ii = 1, n
-            print '(20i13)', b(ii, 1:m)
+        integer*4 M(nrows, ncols)
+        do ii = 1, nrows
+            print '(20i13)', M(ii, 1:ncols)
         end do
 #endif
 
     end subroutine
 
     ! display maximum absolute error between two matrices
-    function max_abs_error(a, b, nrows, ncols)
+    function max_abs_error(A, B, nrows, ncols)
         integer*4 nrows, ncols, ii, jj, cnt
         real*8 error, max_abs_error
 
 #if DTYPE == REAL
-        real*8 a(nrows, ncols), b(nrows, ncols)
+        real*8 A(nrows, ncols), B(nrows, ncols)
 #elif DTYPE == INT
-        integer*4 a(nrows, ncols), b(nrows, ncols)
+        integer*4 A(nrows, ncols), B(nrows, ncols)
 #endif
 
         cnt = 0
@@ -89,7 +119,7 @@ contains
         ! iterate over all entries, computing the absolute difference
         do ii = 1, nrows
             do jj = 1, ncols
-                error = abs(a(ii, jj) - b(ii, jj))
+                error = abs(A(ii, jj) - B(ii, jj))
                 if (cnt == 0) then
                     max_abs_error = error
                     cnt = cnt + 1
@@ -139,10 +169,6 @@ program exercise_2
     use exercise_2_utils
     implicit none
 
-    character(len=20) char_input(3)
-    integer*4 dims(3)
-    integer status
-
     integer*4 ii, jj, kk
     real*8 start, finish
 
@@ -174,19 +200,8 @@ program exercise_2
     allocate(matprod3(dims(1), dims(2)))
 
     ! initialize input matrices with random data
-#if DTYPE == REAL
-    call random_number(matrixA)
-    call random_number(matrixB)
-#elif DTYPE == INT
-    do kk = 1, dims(3)
-        do ii = 1, dims(1)
-            matrixA(ii, kk) = irand()
-        end do
-        do jj = 1, dims(2)
-            matrixB(kk, jj) = irand()
-        end do
-    end do
-#endif
+    call init_matrix(matrixA, dims(1), dims(3))
+    call init_matrix(matrixB, dims(3), dims(2))
 
     if (verbose) then
         print *, "Running in verbose mode ..."
