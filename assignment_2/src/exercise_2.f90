@@ -5,7 +5,7 @@
 !   and performance against the builtin method, matmul
 !
 ! Example usage:
-!   $ exercise_2
+!  $ exercise_2
 ! Enter number of rows, columns, and inner dimension:
 !  100 100 100
 !  Elapsed time for matmul = 1.1700000000E-04
@@ -15,7 +15,7 @@
 !  Elapsed time for inner-col-row = 5.0080000000E-03
 !
 ! If you provide non-integer inputs, you'll get the following error:
-!   $ exercise_2
+!  $ exercise_2
 ! Enter number of rows, columns, and inner dimension:
 !  a b c
 !  Dimensions need to be integers!
@@ -60,12 +60,12 @@ contains
         integer*4 ii, n, m
 
 #if DTYPE == REAL
-        real*8 :: b(n, m)
+        real*8 b(n, m)
         do ii = 1, n
             print '(20f7.2)', b(ii, 1:m)
         end do
 #elif DTYPE == INT
-        integer*4 :: b(n, m)
+        integer*4 b(n, m)
         do ii = 1, n
             print '(20i13)', b(ii, 1:m)
         end do

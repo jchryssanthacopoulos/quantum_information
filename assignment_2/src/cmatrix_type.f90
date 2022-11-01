@@ -75,6 +75,18 @@ contains
         Mdagger%trace = conjg(M%trace)
     end function
 
+    ! deallocate memory associated with matrix elements
+    subroutine Del(M)
+        implicit none
+
+        type(cmatrix) M
+
+        if (Allocated(M%elems)) then
+            deallocate(M%elems)
+            M%N = 0  ! set dimensions to zero
+        end if
+    end subroutine
+
     ! print the matrix in a nice format
     subroutine print_matrix(M)
         type(cmatrix) M

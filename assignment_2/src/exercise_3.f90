@@ -28,4 +28,8 @@ program exercise_3
     print *, "Saving to file mat_adj.txt ..."
     call write_matrix(Mdagger, "mat_adj.txt")
 
+    print *, "Deleting matrices ..."
+    call Del(M)
+    call Del(Mdagger)
+
 end program
