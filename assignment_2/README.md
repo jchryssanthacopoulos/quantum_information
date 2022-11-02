@@ -56,7 +56,7 @@ Value of variable b is 20
 To run the program, type:
 
 ```
-compiled/exercise_2
+compiled/exercise_2 [-v/--verbose]
 ```
 
 This program multiplies two matrices using different methods. Enter the size of the input matrices, and the run times
@@ -80,16 +80,16 @@ If your inputs are not positive integers, you'll get the following errors:
 $ compiled/exercise_2
  Enter number of rows, columns, and inner dimension:
 a b c
-Dimensions need to be integers!
+ Dimensions need to be integers!
 
 # non-positive integers
 $ compiled/exercise_2
  Enter number of rows, columns, and inner dimension:
 1, 2, -1
-Dimensions must be greater than zero!
+ Dimensions must be greater than zero!
 ```
 
-You can also run with the `-v/--verbose` flag, which prints the input and output matrices as an aid to debugging:
+When you run with the `-v/--verbose` flag, it prints the input and output matrices as an aid to debugging:
 
 ```
  Running in verbose mode ...
