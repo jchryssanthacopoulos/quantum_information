@@ -2,7 +2,7 @@ program exercise_1
     implicit none
 
     logical verbose
-    integer i
+    integer ii
     character(len=32) arg
     integer*4 a, b
 
@@ -10,8 +10,8 @@ program exercise_1
     a = 10
     b = 20
 
-    do i = 1, command_argument_count()
-        call get_command_argument(i, arg)
+    do ii = 1, command_argument_count()
+        call get_command_argument(ii, arg)
         select case (arg)
             case ('-v', '--verbose')
                 verbose = .true.
