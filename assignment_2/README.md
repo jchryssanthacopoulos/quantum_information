@@ -73,13 +73,46 @@ Max abs error for inner-col-row = 8.8817841970E-16
 Elapsed time for inner-col-row = 7.0000000000E-06
 ```
 
-If you provide non-integer inputs, you'll get the following error:
+If your inputs are not positive integers, you'll get the following errors:
 
 ```
+# non-integers
 $ compiled/exercise_2
  Enter number of rows, columns, and inner dimension:
 a b c
 Dimensions need to be integers!
+
+# non-positive integers
+$ compiled/exercise_2
+ Enter number of rows, columns, and inner dimension:
+1, 2, -1
+Dimensions must be greater than zero!
+```
+
+You can also run with the `-v/--verbose` flag, which prints the input and output matrices as an aid to debugging:
+
+```
+ Running in verbose mode ...
+ Matrix A = 
+   0.82   0.79
+   0.80   0.99
+ Matrix B = 
+   0.25   0.71
+   0.48   0.96
+ Product using matmul = 
+   0.58   1.35
+   0.67   1.53
+Elapsed time for matmul = 1.7000000000E-05
+ Matrix using row-col-inner = 
+   0.58   1.35
+   0.67   1.53
+Max abs error for row-col-inner = 0.0000000000E+00
+Elapsed time for row-col-inner = 3.0000000000E-06
+ Matrix using inner-col-row = 
+   0.58   1.35
+   0.67   1.53
+Max abs error for inner-col-row = 0.0000000000E+00
+Elapsed time for inner-col-row = 2.0000000000E-06
 ```
 
 ### Exercise 3
