@@ -67,10 +67,10 @@ $ compiled/exercise_2
  Enter number of rows, columns, and inner dimension:
 10, 10, 10
 Elapsed time for matmul = 3.3100000000E-04
-Max abs error for row-col-inner = 8.8817841970E-16
-Elapsed time for row-col-inner = 8.0000000000E-06
-Max abs error for inner-col-row = 8.8817841970E-16
-Elapsed time for inner-col-row = 7.0000000000E-06
+Max abs error for row-col = 8.8817841970E-16
+Elapsed time for row-col = 8.0000000000E-06
+Max abs error for col-row = 8.8817841970E-16
+Elapsed time for col-row = 7.0000000000E-06
 ```
 
 If your inputs are not positive integers, you'll get the following errors:
@@ -103,16 +103,16 @@ When you run with the `-v/--verbose` flag, it prints the input and output matric
    0.58   1.35
    0.67   1.53
 Elapsed time for matmul = 1.7000000000E-05
- Matrix using row-col-inner = 
+ Product using row-col = 
    0.58   1.35
    0.67   1.53
-Max abs error for row-col-inner = 0.0000000000E+00
-Elapsed time for row-col-inner = 3.0000000000E-06
- Matrix using inner-col-row = 
+Max abs error for row-col = 0.0000000000E+00
+Elapsed time for row-col = 3.0000000000E-06
+ Product using col-row = 
    0.58   1.35
    0.67   1.53
-Max abs error for inner-col-row = 0.0000000000E+00
-Elapsed time for inner-col-row = 2.0000000000E-06
+Max abs error for col-row = 0.0000000000E+00
+Elapsed time for col-row = 2.0000000000E-06
 ```
 
 ### Exercise 3

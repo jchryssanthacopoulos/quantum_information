@@ -21,7 +21,7 @@
 !
 
 
-! this module contains some utilities to parse command-line arguments and validate matrix inputs
+! this module contains utilities to parse command-line arguments and validate matrix inputs
 module arg_parse
     implicit none
 
@@ -92,8 +92,73 @@ contains
 end module
 
 
+! this module contains debug checkpoints to print input and output matrices
+module debug
+    implicit none
+
+contains
+    ! print input matrices to multiply
+    !
+    ! Inputs:
+    !   A: First matrix to multiply
+    !   B: Second matrix to multiply
+    !   dims: Number of rows of A, columns of B, and inner dimension
+    !
+    subroutine print_input_matrices(A, B, dims)
+        implicit none
+
+        integer*4 dims(3)
+        real*8 A(dims(1), dims(3)), B(dims(3), dims(2))
+
+        print *, "Matrix A = "
+        call print_matrix(A, dims(1), dims(3))
+        print *, "Matrix B = "
+        call print_matrix(B, dims(3), dims(2))
+    end subroutine
+
+    ! print matrix computed using given method
+    !
+    ! Inputs:
+    !   A: Computed matrix
+    !   nrows: Number of rows
+    !   ncols: Number of columns
+    !   method_name: Method used
+    !
+    subroutine print_matrix_for_method(A, nrows, ncols, method_name)
+        implicit none
+
+        integer*4 nrows, ncols
+        real*8 A(nrows, ncols)
+        character(len=*) method_name
+
+        print *, "Product using ", method_name, " = "
+        call print_matrix(A, nrows, ncols)
+    end subroutine
+
+    ! print matrix in a nice format
+    !
+    ! Inputs:
+    !   M: Matrix to print
+    !   nrows: Number of rows
+    !   ncols: Number of columns
+    !
+    subroutine print_matrix(M, nrows, ncols)
+        implicit none
+
+        integer*4 ii, nrows, ncols
+        real*8 M(nrows, ncols)
+
+        do ii = 1, nrows
+            print '(20f7.2)', M(ii, 1:ncols)
+        end do
+    end subroutine
+
+end module
+
+
 program exercise_2
     use arg_parse
+    use debug
     use mat_ops
     implicit none
 
@@ -134,10 +199,7 @@ program exercise_2
 
     if (verbose) then
         print *, "Running in verbose mode ..."
-        print *, "Matrix A = "
-        call print_matrix(matrixA, dims(1), dims(3))
-        print *, "Matrix B = "
-        call print_matrix(matrixB, dims(3), dims(2))
+        call print_input_matrices(matrixA, matrixB, dims)
     end if
 
     ! call intrinsic method
@@ -146,8 +208,7 @@ program exercise_2
     call cpu_time(finish)
 
     if (verbose) then
-        print *, "Product using matmul = "
-        call print_matrix(matprod1, dims(1), dims(2))
+        call print_matrix_for_method(matprod1, dims(1), dims(2), "matmul")
     end if
     print "('Elapsed time for matmul = ', es16.10)", finish - start
 
@@ -159,11 +220,10 @@ program exercise_2
     call cpu_time(finish)
 
     if (verbose) then
-        print *, "Matrix using row-col-inner = "
-        call print_matrix(matprod2, dims(1), dims(2))
+        call print_matrix_for_method(matprod2, dims(1), dims(2), "row-col")
     end if
-    print "('Max abs error for row-col-inner = ', es16.10)", max_abs_error(matprod1, matprod2, dims(1), dims(2))
-    print "('Elapsed time for row-col-inner = ', es16.10)", finish - start
+    print "('Max abs error for row-col = ', es16.10)", max_abs_error(matprod1, matprod2, dims(1), dims(2))
+    print "('Elapsed time for row-col = ', es16.10)", finish - start
 
     matprod3 = 0.0
     call cpu_time(start)
@@ -171,11 +231,10 @@ program exercise_2
     call cpu_time(finish)
 
     if (verbose) then
-        print *, "Matrix using inner-col-row = "
-        call print_matrix(matprod3, dims(1), dims(2))
+        call print_matrix_for_method(matprod3, dims(1), dims(2), "col-row")
     end if
-    print "('Max abs error for inner-col-row = ', es16.10)", max_abs_error(matprod1, matprod3, dims(1), dims(2))
-    print "('Elapsed time for inner-col-row = ', es16.10)", finish - start
+    print "('Max abs error for col-row = ', es16.10)", max_abs_error(matprod1, matprod3, dims(1), dims(2))
+    print "('Elapsed time for col-row = ', es16.10)", finish - start
 
     ! free memory
     deallocate(matrixA, matrixB, matprod1, matprod2, matprod3)
