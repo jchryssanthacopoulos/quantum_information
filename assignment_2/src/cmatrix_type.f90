@@ -93,7 +93,7 @@ contains
         integer*4 ii
 
         do ii = 1, M%N(1)
-            print '(*(f0.4, 1x, sp, f0.4, "i", 3x))', M%elems(ii, :)
+            print '(*(sp, f8.4, 1x, f7.4, "i", 3x))', M%elems(ii, :)
         end do
     end subroutine
 
@@ -106,7 +106,7 @@ contains
             return
         end if
 
-        print "('The trace of M is ', f0.4, 1x, sp, f0.4, 'i')", M%trace
+        print '(1x, "The trace of M is ", sp, f7.4, 1x, f7.4, "i")', M%trace
     end subroutine
 
     ! write matrix to file
@@ -120,12 +120,12 @@ contains
         open(1, file=filename)
 
         ! write dimensions
-        write(1, "(A, i10.1, A, i10.1, /)") 'Size: ', M%N(1), ' x ', M%N(2)
+        write(1, '(A, i5.1, A, i5.1, /)') 'Dimensions: ', M%N(1), ' x ', M%N(2)
 
         ! write matrix elements
         write(1, *) "Matrix elements:"
         do ii = 1, M%N(1)
-            write(1, '(*(F0.4, 1x, SP, F0.4, "i", 2x))')  M%elems(ii, :)
+            write(1, '(*(sp, f8.4, 1x, f7.4, "i", 2x))')  M%elems(ii, :)
         end do
 
         ! write trace
@@ -133,7 +133,7 @@ contains
         if (M%N(1) /= M%N(2)) then
             write(1, *) "Could not calculate trace for non-square matrix"
         else
-            write(1, '(F0.4, 1x, SP, F0.4, "i")') M%trace
+            write(1, '(sp, f8.4, 1x, f7.4, "i")') M%trace
         end if
 
         close(1)

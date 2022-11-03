@@ -130,14 +130,14 @@ Here's an example output:
 
 ```
  The original matrix is:
-.3637 +.7254i   +.4593 +.8790i
-.0378 +.9221i   +.5062 +.9254i
-The trace of M is .8699 +1.6507i
+ +0.1623 +0.7452i    +0.5475 +0.0883i
+ +0.3301 +0.1123i    +0.0145 +0.4519i
+ The trace of M is +0.1768 +1.1971i
  Saving to file mat.txt ...
  The adjoint matrix is:
-.3637 -.7254i   +.0378 -.9221i
-.4593 -.8790i   +.5062 -.9254i
-The trace of M is .8699 -1.6507i
+ +0.1623 -0.7452i    +0.3301 -0.1123i
+ +0.5475 -0.0883i    +0.0145 -0.4519i
+ The trace of M is +0.1768 -1.1971i
  Saving to file mat_adj.txt ...
  Deleting matrices ...
 ```
