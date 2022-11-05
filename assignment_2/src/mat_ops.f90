@@ -1,4 +1,4 @@
-! this module contains some utilities related to performing operations on matrices
+! this module contains utilities related to performing operations on matrices
 module mat_ops
 
 contains

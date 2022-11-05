@@ -1,3 +1,19 @@
+! Exercise 3
+! ==========
+!
+! This program creates a random matrix of double complex numbers with dimensions provided by the user, computes
+!   the trace and adjoint, and writes the matrices to files
+!
+! Inputs:
+!   number of rows of matrix
+!   number of columns of matrix
+!
+! Returns:
+!   The created matrix, its trace and adjoint
+!   It also writes the original matrix and adjoint to files mat.txt and mat_adj.txt, respectively
+!
+
+
 program exercise_3
     use cmatrix_type
     implicit none

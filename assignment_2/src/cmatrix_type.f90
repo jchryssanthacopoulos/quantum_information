@@ -1,5 +1,8 @@
+! this module contains the cmatrix derived type which implements a double complex matrix with associated attributes
 module cmatrix_type
     implicit none
+
+    integer*4 ii
 
     type cmatrix
         integer, dimension(2) :: N
@@ -18,6 +21,14 @@ module cmatrix_type
 
 contains
     ! initialize the matrix with random data
+    !
+    ! Inputs:
+    !   nrows: Number of rows
+    !   ncols: Number of columns
+    !
+    ! Returns:
+    !   M: Initialized cmatrix object
+    !
     function Init(nrows, ncols) result(M)
         integer*4 nrows, ncols
         type(cmatrix) M
@@ -42,11 +53,15 @@ contains
     end function
 
     ! calculate the trace and store in the variable "trace"
+    !   NOTE: if the matrix is not square, the trace is set to 0
+    !
+    ! Inputs:
+    !   M: cmatrix object to compute the trace of
+    !
     subroutine Trace(M)
         implicit none
 
         type(cmatrix), intent(inout) :: M
-        integer*4 ii
 
         ! initialize trace to zero
         M%trace = (0d0, 0d0)
@@ -60,7 +75,14 @@ contains
         end do
     end subroutine
 
-    ! calculate the matrix adjoint and return in a new variable
+    ! calculate the matrix adjoint
+    !
+    ! Inputs:
+    !   M: cmatrix object to compute the adjoint of
+    !
+    ! Returns:
+    !   Mdagger: cmatrix of matrix adjoint
+    !
     function Adjoint(M) result(Mdagger)
         type(cmatrix), intent(in) :: M
         type(cmatrix) Mdagger
@@ -76,6 +98,10 @@ contains
     end function
 
     ! deallocate memory associated with matrix elements
+    !
+    ! Inputs:
+    !   M: cmatrix object to deallocate memory for
+    !
     subroutine Del(M)
         implicit none
 
@@ -88,9 +114,12 @@ contains
     end subroutine
 
     ! print the matrix in a nice format
+    !
+    ! Inputs:
+    !   M: cmatrix object to print
+    !
     subroutine print_matrix(M)
         type(cmatrix) M
-        integer*4 ii
 
         do ii = 1, M%N(1)
             print '(*(sp, f8.4, 1x, f7.4, "i", 3x))', M%elems(ii, :)
@@ -98,6 +127,11 @@ contains
     end subroutine
 
     ! print the trace of the matrix only if it's been calculated
+    !   NOTE: trace for non-square matrix cannot be displayed
+    !
+    ! Inputs:
+    !   M: cmatrix object to display trace for
+    !
     subroutine print_trace(M)
         type(cmatrix) M
 
@@ -110,11 +144,15 @@ contains
     end subroutine
 
     ! write matrix to file
+    !
+    ! Inputs:
+    !   M: cmatrix object to write
+    !   filename: Name of file to save
+    !
     subroutine write_matrix(M, filename)
         implicit none
 
         type(cmatrix) M
-        integer*4 ii
         character(*) filename
 
         open(1, file=filename)
