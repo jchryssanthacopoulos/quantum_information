@@ -89,7 +89,7 @@ $ compiled/exercise_2
  Dimensions must be greater than zero!
 ```
 
-When you run with the `-v/--verbose` flag, it prints the input and output matrices as an aid to debugging:
+When you run with the `-d/--debug` flag, it prints the input and output matrices as an aid to debugging:
 
 ```
  Running in debug mode ...
