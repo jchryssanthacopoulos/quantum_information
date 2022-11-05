@@ -56,7 +56,7 @@ Value of variable b is 20
 To run the program, type:
 
 ```
-compiled/exercise_2 [-v/--verbose]
+compiled/exercise_2 [-d/--debug]
 ```
 
 This program multiplies two matrices using different methods. Enter the size of the input matrices, and the run times
@@ -92,7 +92,7 @@ $ compiled/exercise_2
 When you run with the `-v/--verbose` flag, it prints the input and output matrices as an aid to debugging:
 
 ```
- Running in verbose mode ...
+ Running in debug mode ...
  Matrix A = 
    0.82   0.79
    0.80   0.99
@@ -130,14 +130,14 @@ Here's an example output:
 
 ```
  The original matrix is:
- +0.1623 +0.7452i    +0.5475 +0.0883i
- +0.3301 +0.1123i    +0.0145 +0.4519i
- The trace of M is +0.1768 +1.1971i
++0.6862 +0.6708i   +0.4096 +0.0576i
++0.8869 +0.4427i   +0.1159 +0.7512i
+ The trace of M is +0.8021 +1.4219i
  Saving to file mat.txt ...
  The adjoint matrix is:
- +0.1623 -0.7452i    +0.3301 -0.1123i
- +0.5475 -0.0883i    +0.0145 -0.4519i
- The trace of M is +0.1768 -1.1971i
++0.6862 -0.6708i   +0.8869 -0.4427i
++0.4096 -0.0576i   +0.1159 -0.7512i
+ The trace of M is +0.8021 -1.4219i
  Saving to file mat_adj.txt ...
  Deleting matrices ...
 ```

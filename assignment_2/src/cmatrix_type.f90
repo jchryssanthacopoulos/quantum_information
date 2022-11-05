@@ -122,7 +122,7 @@ contains
         type(cmatrix) M
 
         do ii = 1, M%N(1)
-            print '(*(sp, f8.4, 1x, f7.4, "i", 3x))', M%elems(ii, :)
+            print '(*(sp, f7.4, 1x, f7.4, "i", 3x))', M%elems(ii, :)
         end do
     end subroutine
 

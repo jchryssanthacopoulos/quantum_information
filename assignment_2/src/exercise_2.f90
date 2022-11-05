@@ -10,14 +10,14 @@
 !   number of inner dimensions (i.e., number of columns of first matrix, rows of second matrix)
 !
 ! Flags:
-!   -v/--verbose to display input and output matrices
+!   -d/--debug to display input and output matrices
 !
 ! Raises:
 !   Error if inputs are not positive integers
 !
 ! Returns:
 !   Elapsed time for each multiplication method and maximum absolute error
-!   If verbose, input and output matrices are also displayed
+!   If debug flag set, input and output matrices are also displayed
 !
 
 
@@ -45,7 +45,7 @@ contains
         do ii = 1, command_argument_count()
             call get_command_argument(ii, arg)
             select case (arg)
-                case ('-v', '--verbose')
+                case ('-d', '--debug')
                     verbose = .true.
             end select
         end do
@@ -78,6 +78,12 @@ contains
     ! converts a string into an integer, returning a non-zero status code if conversion failed
     ! adapted from code found here:
     ! https://stackoverflow.com/questions/24071722/converting-a-string-to-an-integer-in-fortran-90
+    !
+    ! Inputs:
+    !   str: String to try to convert to integer
+    !   int: Integer to save the result to
+    !   status: Resulting status (if it is equal to zero, conversion was successful; non-zero otherwise)
+    !
     subroutine str2int(str, int, status)
         implicit none
 
@@ -198,7 +204,7 @@ program exercise_2
     call random_number(matrixB)
 
     if (verbose) then
-        print *, "Running in verbose mode ..."
+        print *, "Running in debug mode ..."
         call print_input_matrices(matrixA, matrixB, dims)
     end if
 
