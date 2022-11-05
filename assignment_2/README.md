@@ -33,10 +33,10 @@ chmod u+x compile.sh
 To run the program, type:
 
 ```
-compiled/exercise_1 [-v/--verbose]
+compiled/exercise_1 [-d/--debug]
 ```
 
-The program experiments with debug checkpoints. If the `-v` or `--verbose` option is not provided, the program does
+The program experiments with debug checkpoints. If the `-d` or `--debug` option is not provided, the program does
 nothing, exiting with
 
 ```

@@ -1,3 +1,17 @@
+! Exercise 1
+! ==========
+!
+! This program contains a subroutine to be used as a checkpoint for debugging, which can be entered by passing the
+!   -d/--debug flag on the command-line
+!
+! Flags:
+!   -d/--debug to enter debug checkpoint and inspect values of variables
+!
+! Returns:
+!   Values of certain variables if debug flag passed in
+!
+
+
 program exercise_1
     implicit none
 
@@ -13,7 +27,7 @@ program exercise_1
     do ii = 1, command_argument_count()
         call get_command_argument(ii, arg)
         select case (arg)
-            case ('-v', '--verbose')
+            case ('-d', '--debug')
                 verbose = .true.
         end select
     end do
