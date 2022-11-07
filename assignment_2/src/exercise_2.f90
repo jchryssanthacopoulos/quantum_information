@@ -21,83 +21,6 @@
 !
 
 
-! this module contains utilities to parse command-line arguments and validate matrix inputs
-module arg_parse
-    implicit none
-
-    integer*4 ii
-
-    ! used for parsing matrix dimensions
-    character(len=20) char_input(3)
-    integer*4 dims(3)
-    integer status
-
-    ! command-line arguments
-    logical debug_mode
-
-contains
-    ! parse command-line arguments
-    subroutine parse_cmd_args
-        implicit none
-
-        character(len=32) arg
-
-        do ii = 1, command_argument_count()
-            call get_command_argument(ii, arg)
-            select case (arg)
-                case ('-d', '--debug')
-                    debug_mode = .true.
-            end select
-        end do
-    end subroutine
-
-    ! checks whether the dimensions are integers
-    subroutine check_dims_integers
-        implicit none
-
-        do ii = 1, 3
-            call str2int(char_input(ii), dims(ii), status)
-            if (status /= 0) then
-                return
-            end if
-        end do
-    end subroutine
-
-    ! checks whether the dimensions are positive
-    subroutine check_dims_positive
-        implicit none
-
-        do ii = 1, 3
-            if (dims(ii) < 1) then
-                status = -1
-                return
-            end if
-        end do
-    end subroutine
-
-    ! converts a string into an integer, returning a non-zero status code if conversion failed
-    ! adapted from code found here:
-    ! https://stackoverflow.com/questions/24071722/converting-a-string-to-an-integer-in-fortran-90
-    !
-    ! Inputs:
-    !   str: String to try to convert to integer
-    !   int: Integer to save the result to
-    !   status: Resulting status (if it is equal to zero, conversion was successful; non-zero otherwise)
-    !
-    subroutine str2int(str, int, status)
-        implicit none
-
-        character(len=*), intent(in) :: str
-        integer, intent(out) :: int
-        integer, intent(out) :: status
-
-        ! read string into an integer, saving the resulting status
-        read(str, *, iostat=status) int
-    end subroutine
-
-end module
-
-
 ! this module contains debug checkpoints to print input and output matrices
 module debug
     implicit none
@@ -168,22 +91,24 @@ program exercise_2
     use mat_ops
     implicit none
 
-    real*8, dimension(:, :), allocatable :: matrixA, matrixB, matprod1, matprod2, matprod3
+    character(len=20) char_input(3)
+    integer*4 dims(3)
     real*8 start, finish
+    real*8, dimension(:, :), allocatable :: matrixA, matrixB, matprod1, matprod2, matprod3
 
     ! read matrix input sizes
     print *, 'Enter number of rows, columns, and inner dimension:'
     read *, char_input
 
     ! check if dimensions are integers
-    call check_dims_integers
+    call check_dims_integers(char_input, dims, 3)
     if (status /= 0) then
         print *, "Dimensions need to be integers!"
         stop
     end if
 
     ! check if dimensions are positive
-    call check_dims_positive
+    call check_dims_positive(dims, 3)
     if (status /= 0) then
         print *, "Dimensions must be greater than zero!"
         stop

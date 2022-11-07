@@ -13,24 +13,16 @@
 
 
 program exercise_1
+    use arg_parse
     implicit none
 
-    logical debug_mode
-    character(len=32) arg
-    integer*4 ii, a, b
+    integer*4 a, b
 
-    debug_mode = .false.
     a = 10
     b = 20
 
     ! parse command-line options
-    do ii = 1, command_argument_count()
-        call get_command_argument(ii, arg)
-        select case (arg)
-            case ('-d', '--debug')
-                debug_mode = .true.
-        end select
-    end do
+    call parse_cmd_args()
 
     ! enter checkpoint if in debug mode
     if (debug_mode) then

@@ -15,17 +15,33 @@
 
 
 program exercise_3
+    use arg_parse
     use cmatrix_type
     implicit none
 
-    integer*4 nrows, ncols
+    character(len=20) char_input(2)
+    integer*4 dims(2)
     type(cmatrix) M, Mdagger
 
     print *, "Enter the number of rows and columns of your matrix:"
-    read *, nrows, ncols
+    read *, char_input
+
+    ! check if dimensions are integers
+    call check_dims_integers(char_input, dims, 2)
+    if (status /= 0) then
+        print *, "Dimensions need to be integers!"
+        stop
+    end if
+
+    ! check if dimensions are positive
+    call check_dims_positive(dims, 2)
+    if (status /= 0) then
+        print *, "Dimensions must be greater than zero!"
+        stop
+    end if
 
     ! initialize matrix with random data
-    M = Init(nrows, ncols)
+    M = Init(dims(1), dims(2))
 
     ! display matrix and save to file
     print *, "The original matrix is:"

@@ -8,7 +8,7 @@ To compile the Fortran programs, make sure you have `gfortran` installed. The pr
 
 ## Compilation
 
-To compile the programs, run:
+To compile the modules and programs, run:
 
 ```
 ./compile.sh
