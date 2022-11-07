@@ -33,7 +33,7 @@ module arg_parse
     integer status
 
     ! command-line arguments
-    logical verbose
+    logical debug_mode
 
 contains
     ! parse command-line arguments
@@ -46,7 +46,7 @@ contains
             call get_command_argument(ii, arg)
             select case (arg)
                 case ('-d', '--debug')
-                    verbose = .true.
+                    debug_mode = .true.
             end select
         end do
     end subroutine
@@ -203,7 +203,7 @@ program exercise_2
     call random_number(matrixA)
     call random_number(matrixB)
 
-    if (verbose) then
+    if (debug_mode) then
         print *, "Running in debug mode ..."
         call print_input_matrices(matrixA, matrixB, dims)
     end if
@@ -213,7 +213,7 @@ program exercise_2
         matprod1 = matmul(matrixA, matrixB)
     call cpu_time(finish)
 
-    if (verbose) then
+    if (debug_mode) then
         call print_matrix_for_method(matprod1, dims(1), dims(2), "matmul")
     end if
     print "('Elapsed time for matmul = ', es16.10)", finish - start
@@ -225,7 +225,7 @@ program exercise_2
         call matmul_row_col(matrixA, matrixB, matprod2, dims)
     call cpu_time(finish)
 
-    if (verbose) then
+    if (debug_mode) then
         call print_matrix_for_method(matprod2, dims(1), dims(2), "row-col")
     end if
     print "('Max abs error for row-col = ', es16.10)", max_abs_error(matprod1, matprod2, dims(1), dims(2))
@@ -236,7 +236,7 @@ program exercise_2
         call matmul_col_row(matrixA, matrixB, matprod3, dims)
     call cpu_time(finish)
 
-    if (verbose) then
+    if (debug_mode) then
         call print_matrix_for_method(matprod3, dims(1), dims(2), "col-row")
     end if
     print "('Max abs error for col-row = ', es16.10)", max_abs_error(matprod1, matprod3, dims(1), dims(2))
