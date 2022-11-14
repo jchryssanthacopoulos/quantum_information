@@ -46,18 +46,90 @@ contains
         close(1)
     end subroutine
 
-end module histogram
+end module
+
+
+module arg_parse
+    implicit none
+
+    integer ii
+
+    integer ndim
+    integer nbins
+    real*8 min_val, max_val
+
+    ! default paramters
+    integer, parameter :: ndim_default = 10
+    integer, parameter :: nbins_default = 100
+    real*8, parameter :: min_val_default = 0.0
+    real*8, parameter :: max_val_default = 5.0
+
+contains
+    ! parse command-line arguments
+    subroutine parse_cmd_args
+        implicit none
+
+        integer num_args
+        character(len=32) arg
+
+        ! set defaults
+        ndim = ndim_default
+        nbins = nbins_default
+        min_val = min_val_default
+        max_val = max_val_default
+
+        num_args = command_argument_count()
+
+        ii = 0
+
+        do while(ii <= num_args)
+            call get_command_argument(ii, arg)
+
+            select case (arg)
+                case ('--ndim')
+                    if (ii < num_args) then
+                        call get_command_argument(ii + 1, arg)
+                        read(arg, *) ndim
+                        ii = ii + 1
+                    end if
+
+                case ('--nbins')
+                    if (ii < num_args) then
+                        call get_command_argument(ii + 1, arg)
+                        read(arg, *) nbins
+                        ii = ii + 1
+                    end if
+
+                case ('--min_val')
+                    if (ii < num_args) then
+                        call get_command_argument(ii + 1, arg)
+                        read(arg, *) min_val
+                        ii = ii + 1
+                    end if
+
+                case ('--max_val')
+                    if (ii < num_args) then
+                        call get_command_argument(ii + 1, arg)
+                        read(arg, *) max_val
+                        ii = ii + 1
+                    end if
+            end select
+
+            ii = ii + 1
+        end do
+
+    end subroutine
+
+end module
 
 
 program exercise_2
     use histogram
+    use arg_parse
     implicit none
 
-    integer ii
-    integer n
-
     ! to store hermitian matrix
-    complex*16, dimension(:, :), allocatable :: A
+    complex*16, dimension(:, :), allocatable :: H
 
     ! variables for computing eigenvalues and derived quantities
     integer lwork, info
@@ -66,35 +138,35 @@ program exercise_2
     complex*8, dimension(:), allocatable :: work
     real*8, dimension(:), allocatable :: rwork
 
-    ! variables for computing histogram
-    integer nbins
-    real*8 min_val, max_val
-
-    ! matrix size
-    n = 5
+    ! read matrix dimension and histogram parameters
+    call parse_cmd_args()
+    print *, "ndim =", ndim
+    print *, "nbins =", nbins
+    print *, "min_val =", min_val
+    print *, "max_val =", max_val
 
     ! used for computing eigenvalues
-    lwork = max(1, 2 * n - 1)
+    lwork = max(1, 2 * ndim - 1)
 
     ! allocate memory
-    allocate(A(n, n))
-    allocate(eigvals(n))
-    allocate(norm_eigval_spacings(n - 1))
+    allocate(H(ndim, ndim))
+    allocate(eigvals(ndim))
+    allocate(norm_eigval_spacings(ndim - 1))
     allocate(work(max(1, lwork)))
-    allocate(rwork(max(1, 3 * n - 2)))
+    allocate(rwork(max(1, 3 * ndim - 2)))
 
     ! generatre random hermitian matrix
-    A = rand_hermitian_matrix(n)
+    H = rand_hermitian_matrix(ndim)
 
     ! display matrix
-    call print_matrix(A, n)
+    call print_matrix(H, ndim)
 
-    ! compute eigenvalues of matrix A (ordered in ASCENDING ORDER)
-    call zheev('N', 'U', n, A, n, eigvals, work, lwork, rwork, info)
+    ! compute eigenvalues in ascending order
+    call zheev('N', 'U', ndim, H, ndim, eigvals, work, lwork, rwork, info)
 
     ! compute eigenvalue spacings and average
-    ave_delta_eigvals = (eigvals(n) - eigvals(1)) / (n - 1)
-    do ii = 1, n - 1
+    ave_delta_eigvals = (eigvals(ndim) - eigvals(1)) / (ndim - 1)
+    do ii = 1, ndim - 1
         norm_eigval_spacings(ii) = (eigvals(ii + 1) - eigvals(ii)) / ave_delta_eigvals
     end do
 
@@ -105,12 +177,9 @@ program exercise_2
     print *, "Average eigenvalue spacing =", ave_delta_eigvals
 
     ! compute histogram
-    nbins = 10
-    min_val = 0
-    max_val = 10
     call make_hist(norm_eigval_spacings, nbins, min_val, max_val, "histogram.txt")
 
-    deallocate(A, eigvals, norm_eigval_spacings, work, rwork)
+    deallocate(H, eigvals, norm_eigval_spacings, work, rwork)
 
 contains
     function rand_hermitian_matrix(n) result(H)
