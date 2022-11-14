@@ -7,7 +7,7 @@
 SRC_DIR="src"
 DEST_DIR="compiled"
 
-EXTRA_ARGS="-fno-range-check -J compiled"
+EXTRA_ARGS="-fno-range-check -J compiled -llapack"
 
 
 ##########################
