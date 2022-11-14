@@ -3,7 +3,54 @@
 !
 
 
+module histogram
+
+contains
+    subroutine make_hist(values, nbins, min_val, max_val, filename)
+        implicit none
+
+        integer nbins
+        real*8 min_val, max_val
+        real*8, dimension(:), intent(in) :: values
+        character(len=*), intent(in) :: filename
+
+        integer ii, jj
+        integer bin_count
+        real*8 dx, norm_factor, left_bin_edge
+
+        ! compute spacing and normalization factor
+        dx = (max_val - min_val) / nbins
+        norm_factor = size(values) * dx
+
+        open(1, file=filename)
+        write(1, *) "left_edges centers count norm_count"
+
+        ! compute histogram
+        left_bin_edge = min_val
+
+        do ii = 1, nbins
+            bin_count = 0
+
+            do jj = 1, size(values, 1)
+                if (values(jj) >= left_bin_edge .and. values(jj) <= left_bin_edge + dx) then
+                    bin_count = bin_count + 1
+                end if
+            end do
+
+            ! write entry to file
+            write(1, *) left_bin_edge, left_bin_edge + dx, bin_count, bin_count / norm_factor
+
+            left_bin_edge = left_bin_edge + dx
+        end do
+
+        close(1)
+    end subroutine
+
+end module histogram
+
+
 program exercise_2
+    use histogram
     implicit none
 
     integer ii
@@ -18,6 +65,10 @@ program exercise_2
     real*8, dimension(:), allocatable :: eigvals, norm_eigval_spacings
     complex*8, dimension(:), allocatable :: work
     real*8, dimension(:), allocatable :: rwork
+
+    ! variables for computing histogram
+    integer nbins
+    real*8 min_val, max_val
 
     ! matrix size
     n = 5
@@ -52,6 +103,12 @@ program exercise_2
     print *, "Eigenvalues =", eigvals
     print *, "Normalized eigenvalue spacings =", norm_eigval_spacings
     print *, "Average eigenvalue spacing =", ave_delta_eigvals
+
+    ! compute histogram
+    nbins = 10
+    min_val = 0
+    max_val = 10
+    call make_hist(norm_eigval_spacings, nbins, min_val, max_val, "histogram.txt")
 
     deallocate(A, eigvals, norm_eigval_spacings, work, rwork)
 
