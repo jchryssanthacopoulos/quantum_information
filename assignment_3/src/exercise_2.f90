@@ -55,19 +55,22 @@ module arg_parse
 
     integer ii
 
+    
+    character(len=50) mat_type
+    character(len=50) output_filename
     integer ndim, nsamples, nbins
     real*8 min_val, max_val
     logical debug_mode
-    character(len=20) mat_type
 
     ! default paramters
+    character(len=50), parameter :: mat_type_default = "hermitian"
+    character(len=50), parameter :: output_filename_default = "histogram.csv"
     integer, parameter :: ndim_default = 10
     integer, parameter :: nsamples_default = 1
     integer, parameter :: nbins_default = 100
     real*8, parameter :: min_val_default = 0.0
     real*8, parameter :: max_val_default = 5.0
     logical, parameter :: debug_mode_default = .false.
-    character(len=20), parameter :: mat_type_default = "hermitian"
 
 contains
     ! parse command-line arguments
@@ -78,13 +81,14 @@ contains
         character(len=32) arg
 
         ! set defaults
+        mat_type = mat_type_default
+        output_filename = output_filename_default
         ndim = ndim_default
         nsamples = nsamples_default
         nbins = nbins_default
         min_val = min_val_default
         max_val = max_val_default
         debug_mode = debug_mode_default
-        mat_type = mat_type_default
 
         num_args = command_argument_count()
 
@@ -94,6 +98,20 @@ contains
             call get_command_argument(ii, arg)
 
             select case (arg)
+                case ('--mat_type')
+                    if (ii < num_args) then
+                        call get_command_argument(ii + 1, arg)
+                        read(arg, *) mat_type
+                        ii = ii + 1
+                    end if
+
+                case ('--output_filename')
+                    if (ii < num_args) then
+                        call get_command_argument(ii + 1, arg)
+                        read(arg, '(A)') output_filename
+                        ii = ii + 1
+                    end if
+
                 case ('--ndim')
                     if (ii < num_args) then
                         call get_command_argument(ii + 1, arg)
@@ -131,13 +149,6 @@ contains
 
                 case ('-d', '--debug')
                     debug_mode = .true.
-
-                case ('--mat_type')
-                    if (ii < num_args) then
-                        call get_command_argument(ii + 1, arg)
-                        read(arg, *) mat_type
-                        ii = ii + 1
-                    end if
             end select
 
             ii = ii + 1
@@ -171,6 +182,7 @@ program exercise_2
     ! read matrix dimension and histogram parameters
     call parse_cmd_args()
     print *, "mat_type = ", mat_type
+    print *, "output_filename = ", output_filename
     print *, "ndim =", ndim
     print *, "nsamples =", nsamples
     print *, "nbins =", nbins
@@ -230,7 +242,7 @@ program exercise_2
     end do
 
     ! compute histogram
-    call make_hist(all_norm_eigval_spacings, nbins, min_val, max_val, "histogram.txt")
+    call make_hist(all_norm_eigval_spacings, nbins, min_val, max_val, output_filename)
 
     deallocate(H, eigvals, norm_eigval_spacings, all_norm_eigval_spacings, work, rwork)
 
