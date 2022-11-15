@@ -23,7 +23,7 @@ contains
         norm_factor = size(values) * dx
 
         open(1, file=filename)
-        write(1, *) "left_edges centers count norm_count"
+        write(1, *) "left_edges,centers,count,norm_count"
 
         ! compute histogram
         left_bin_edge = min_val
@@ -38,7 +38,8 @@ contains
             end do
 
             ! write entry to file
-            write(1, *) left_bin_edge, left_bin_edge + dx, bin_count, bin_count / norm_factor
+            write(1, '(f10.7, ",", f10.7, ",", i10, ",", f10.7)') &
+                left_bin_edge, left_bin_edge + dx / 2, bin_count, bin_count / norm_factor
 
             left_bin_edge = left_bin_edge + dx
         end do
@@ -57,6 +58,7 @@ module arg_parse
     integer ndim, nsamples, nbins
     real*8 min_val, max_val
     logical debug_mode
+    character(len=20) mat_type
 
     ! default paramters
     integer, parameter :: ndim_default = 10
@@ -65,6 +67,7 @@ module arg_parse
     real*8, parameter :: min_val_default = 0.0
     real*8, parameter :: max_val_default = 5.0
     logical, parameter :: debug_mode_default = .false.
+    character(len=20), parameter :: mat_type_default = "hermitian"
 
 contains
     ! parse command-line arguments
@@ -81,6 +84,7 @@ contains
         min_val = min_val_default
         max_val = max_val_default
         debug_mode = debug_mode_default
+        mat_type = mat_type_default
 
         num_args = command_argument_count()
 
@@ -127,6 +131,13 @@ contains
 
                 case ('-d', '--debug')
                     debug_mode = .true.
+
+                case ('--mat_type')
+                    if (ii < num_args) then
+                        call get_command_argument(ii + 1, arg)
+                        read(arg, *) mat_type
+                        ii = ii + 1
+                    end if
             end select
 
             ii = ii + 1
@@ -159,6 +170,7 @@ program exercise_2
 
     ! read matrix dimension and histogram parameters
     call parse_cmd_args()
+    print *, "mat_type = ", mat_type
     print *, "ndim =", ndim
     print *, "nsamples =", nsamples
     print *, "nbins =", nbins
@@ -177,8 +189,12 @@ program exercise_2
     allocate(rwork(max(1, 3 * ndim - 2)))
 
     do ss = 1, nsamples
-        ! generatre random hermitian matrix
-        H = rand_hermitian_matrix(ndim)
+        ! generatre random hermitian or real diagonal matrix
+        if (mat_type .eq. "hermitian") then
+            H = rand_hermitian_matrix(ndim)
+        else if (mat_type .eq. "diag") then
+            H = rand_real_diag_matrix(ndim)
+        end if
 
         ! display matrix
         if (debug_mode) then
@@ -228,13 +244,26 @@ contains
             do jj = 1, ii
                 if (ii /= jj) then
                     ! sample random complex numbers off the diagonal
-                    h(ii, jj) = cmplx(RAND(0)*2 - 1, RAND(0)*2 - 1)
-                    h(jj, ii) = conjg(h(ii, jj))
+                    H(ii, jj) = cmplx(RAND(0)*2 - 1, RAND(0)*2 - 1)
+                    H(jj, ii) = conjg(h(ii, jj))
                 else
                     ! sample real numbers on the diagonal
-                    h(ii, ii) = RAND(0)*2 - 1
+                    H(ii, ii) = RAND(0)*2 - 1
                 end if
             end do
+        end do
+    end function
+
+    function rand_real_diag_matrix(n) result(H)
+        integer n
+        integer ii
+        complex*16, dimension(n, n) :: H
+
+        H = 0
+
+        do ii = 1, n
+            ! sample real numbers on the diagonal
+            H(ii, ii) = RAND(0)*2 - 1
         end do
     end function
 
