@@ -139,7 +139,7 @@ contains
         real*8 A(nrows, ncols)
         character(len=*) method_name
 
-        print *, "Product using ", method_name, " = "
+        print *, "Product = "
         call print_matrix(A, nrows, ncols)
     end subroutine
 
@@ -172,6 +172,7 @@ program exercise_1
     implicit none
 
     integer*4 dims(3)
+    character(len=8) arg_char
     real*8 start, finish
     real*8, dimension(:, :), allocatable :: matrixA, matrixB, matprod
 
@@ -194,9 +195,12 @@ program exercise_1
 
     ! print command-line options
     print *, "mat_mul_method = ", mat_mul_method
-    print *, "num_rows = ", dims(1)
-    print *, "num_cols =", dims(2)
-    print *, "num_inner_dim =", dims(3)
+    write (arg_char, "(i8)") dims(1)
+    print *, "num_rows = ", adjustl(arg_char)
+    write (arg_char, "(i8)") dims(2)
+    print *, "num_cols = ", adjustl(arg_char)
+    write (arg_char, "(i8)") dims(3)
+    print *, "num_inner_dim = ", adjustl(arg_char)
 
     ! allocate memory for matrices
     allocate(matrixA(dims(1), dims(3)))

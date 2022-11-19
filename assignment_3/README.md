@@ -42,16 +42,50 @@ chmod u+x compile.sh
 The program multiples two matrices with given dimensions using the specified method. To run the program, type:
 
 ```
-compiled/exercise_1 [--mat_mul_method <method> --num_rows <nr> --num_cols <nc> --num_inner_dim <ninner> -d/--debug]
+compiled/exercise_1_[Oflag] [--mat_mul_method <method> --num_rows <nr> --num_cols <nc> --num_inner_dim <ninner> -d/--debug]
 ```
 
-The optional arguments are
+where `[Oflag]` refers to the optimization flag and can be `O0`, `01`, `O2`, `O3`, and `Ofast`. The optional arguments are
 
 1. `mat_mul_method`: Method to use to multiply the matrices (options are `matmul`, `row-col`, and `col-row`) (default = `matmul`)
 2. `num_rows`: Number of rows of the first matrix (default = 10)
 3. `num_cols`: Number of columns of the second matrix (default = 10)
 4. `num_inner_dim`: Number of inner dimensions (i.e., number of columns of first matrix, rows of second matrix) (default = 10)
 5. `debug`: Flag indicating whether to run in debug mode, which prints the inputs and outputs to the screen (default = `False`)
+
+As an example, consider
+
+```
+$ compiled/exercise_1_O0 \
+ --mat_mul_method matmul --num_rows 3 \
+ --num_cols 3 --num_inner_dim 4 --debug
+ mat_mul_method = matmul              
+ num_rows = 3       
+ num_cols = 3       
+ num_inner_dim = 4       
+ Running in debug mode ...
+ Matrix A = 
+   0.43   0.39   0.04   0.17
+   0.42   0.95   0.88   0.55
+   0.01   0.19   0.47   0.62
+ Matrix B = 
+   0.10   0.37   0.73
+   0.96   0.39   0.38
+   0.03   0.53   0.23
+   0.21   0.36   0.69
+ Product = 
+   0.45   0.39   0.59
+   1.10   1.19   1.25
+   0.33   0.55   0.62
+Elapsed time = 7.0000000000E-06
+```
+
+When there are errors in the inputs, the program terminates:
+
+```
+$ compiled/exercise_1_O0 --mat_mul_method matmul --num_rows -1 --num_cols 3 --num_inner_dim 4 --debug
+ Dimensions must be greater than zero!
+```
 
 The Python notebook `src/exercise_1.ipynb` runs the program for different matrix sizes and methods, performs fits,
 and plots the results.
