@@ -39,13 +39,13 @@ chmod u+x compile.sh
 
 ### Exercise 1
 
-The program multiples two matrices with given dimensions using the specified mehtod. To run the program, type:
+The program multiples two matrices with given dimensions using the specified method. To run the program, type:
 
 ```
 compiled/exercise_1 [--mat_mul_method <method> --num_rows <nr> --num_cols <nc> --num_inner_dim <ninner> -d/--debug]
 ```
 
-The optional arguments are:
+The optional arguments are
 
 1. `mat_mul_method`: Method to use to multiply the matrices (options are `matmul`, `row-col`, and `col-row`) (default = `matmul`)
 2. `num_rows`: Number of rows of the first matrix (default = 10)
@@ -53,7 +53,7 @@ The optional arguments are:
 4. `num_inner_dim`: Number of inner dimensions (i.e., number of columns of first matrix, rows of second matrix) (default = 10)
 5. `debug`: Flag indicating whether to run in debug mode, which prints the inputs and outputs to the screen (default = `False`)
 
-The Python notebook `src/exercise_1.ipynb` runs the program for different matrix sizes and methdos, performs fits,
+The Python notebook `src/exercise_1.ipynb` runs the program for different matrix sizes and methods, performs fits,
 and plots the results.
 
 ### Exercise 2
@@ -62,7 +62,7 @@ The program computes the eigenvalues of a matrix and saves a histogram of the no
 To run it, type:
 
 ```
-compiled/exericse_2 [--mat_type <mat_type> --output_filename <filename> --ndim <ndim> --nsamples <nsamp> --nbins <nbins --min_val <min_val> --max_val <max_val>]
+compiled/exericse_2 [--mat_type <mat_type> --output_filename <filename> --ndim <ndim> --nsamples <nsamp> --nbins <nbins> --min_val <min_val> --max_val <max_val> -d/--debug]
 ```
 
 where the arguments are
@@ -70,11 +70,12 @@ where the arguments are
 1. `mat_type`: Type of matrix to diagonalize (options are `hermitian` and `diag`)
 2. `output_filename`: Name of file to save the output histogram
 3. `ndim`: Number of rows and columns of the matrix
-4. `nsamples`: Number of random matrix samples to generate to produce histogram
+4. `nsamples`: Number of random matrix to sample to produce histogram
 5. `nbins`: Number of bins to use to produce histogram
-6. `min_val`: Minimum value of histogram
-7. `max_val`: Maximum value of histogram
+6. `min_val`: Minimum spacings value of histogram
+7. `max_val`: Maximum spacings value of histogram
+8. `-d/debug`: Flag indicating whether to run in debug mode, which prints the matrix, eigenvalues, spacings, and their average for each sample
 
 ### Exercise 3
 
-The notebook `src/exercise_3.ipynb` can be used to run the program and produce fits to the histogram to compare to theory.
+The notebook `src/exercise_3.ipynb` can be used to run the program in Exercise 2 and produce fits to the histogram to compare to theory.
