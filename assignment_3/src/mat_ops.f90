@@ -81,4 +81,22 @@ contains
         end do
     end function
 
+    ! print real matrix in a nice format
+    !
+    ! Inputs:
+    !   M: Matrix to print
+    !   nrows: Number of rows
+    !   ncols: Number of columns
+    !
+    subroutine print_real_matrix(M, nrows, ncols)
+        implicit none
+
+        integer*4 ii, nrows, ncols
+        real*8 M(nrows, ncols)
+
+        do ii = 1, nrows
+            print '(20f7.2)', M(ii, 1:ncols)
+        end do
+    end subroutine
+
 end module

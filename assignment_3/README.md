@@ -96,7 +96,7 @@ The program computes the eigenvalues of a matrix and saves a histogram of the no
 To run it, type:
 
 ```
-compiled/exericse_2 [--mat_type <mat_type> --output_filename <filename> --ndim <ndim> --nsamples <nsamp> --nbins <nbins> --min_val <min_val> --max_val <max_val> -d/--debug]
+compiled/exercise_2 [--mat_type <mat_type> --output_filename <filename> --ndim <ndim> --nsamples <nsamp> --nbins <nbins> --min_val <min_val> --max_val <max_val> -d/--debug]
 ```
 
 where the arguments are
@@ -108,7 +108,7 @@ where the arguments are
 5. `nbins`: Number of bins to use to produce histogram
 6. `min_val`: Minimum spacings value of histogram
 7. `max_val`: Maximum spacings value of histogram
-8. `-d/debug`: Flag indicating whether to run in debug mode, which prints the matrix, eigenvalues, spacings, and their average for each sample
+8. `debug`: Flag indicating whether to run in debug mode, which prints the matrix, eigenvalues, spacings, and their average for each sample
 
 ### Exercise 3
 

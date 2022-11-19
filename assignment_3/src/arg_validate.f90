@@ -7,25 +7,7 @@ module arg_validate
     ! used for indicating status for argument parsing
     integer status
 
-    ! command-line arguments
-    ! logical debug_mode
-
 contains
-    ! parse command-line arguments
-    ! subroutine parse_cmd_args
-    !     implicit none
-
-    !     character(len=32) arg
-
-    !     do ii = 1, command_argument_count()
-    !         call get_command_argument(ii, arg)
-    !         select case (arg)
-    !             case ('-d', '--debug')
-    !                 debug_mode = .true.
-    !         end select
-    !     end do
-    ! end subroutine
-
     ! checks whether the dimensions are integers
     !
     ! Inputs:

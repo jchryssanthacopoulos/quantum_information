@@ -1,23 +1,25 @@
 ! Exercise 1
 ! ==========
 !
-! This program implements two different ways of performing matrix multiplication and compares their results and
-!   performance against the builtin method, matmul
+! This program multiplies two matrices using the specified method and returns the time taken
 !
 ! Inputs:
-!   number of rows of first matrix
-!   number of columns of second matrix
-!   number of inner dimensions (i.e., number of columns of first matrix, rows of second matrix)
-!
-! Flags:
-!   -d/--debug to display input and output matrices
+! Command-line arguments:
+!   mat_mul_method: Method to use to multiply the matrices (options are matmul, row-col, and col-row)
+!     (default = `matmul`)
+!   num_rows: Number of rows of the first matrix (default = 10)
+!   num_cols: Number of columns of the second matrix (default = 10)
+!   num_inner_dim: Number of inner dimensions (i.e., number of columns of first matrix, rows of second matrix)
+!     (default = 10)
+!   debug: Flag indicating whether to run in debug mode, which prints the inputs and outputs to the screen
+!     (default = False)
 !
 ! Raises:
-!   Error if inputs are not positive integers
+!   Error if input dimensions are not positive integers
 !
 ! Returns:
-!   Elapsed time for each multiplication method and maximum absolute error
-!   If debug flag set, input and output matrices are also displayed
+!   Time elapsed to multiply the matrices
+!   If debug flag passed, input and output matrices are also displayed
 !
 
 
@@ -100,74 +102,9 @@ contains
 end module
 
 
-! this module contains debug checkpoints to print input and output matrices
-module debug
-    implicit none
-
-contains
-    ! print input matrices to multiply
-    !
-    ! Inputs:
-    !   A: First matrix to multiply
-    !   B: Second matrix to multiply
-    !   dims: Number of rows of A, columns of B, and inner dimension
-    !
-    subroutine print_input_matrices(A, B, dims)
-        implicit none
-
-        integer*4 dims(3)
-        real*8 A(dims(1), dims(3)), B(dims(3), dims(2))
-
-        print *, "Matrix A = "
-        call print_matrix(A, dims(1), dims(3))
-        print *, "Matrix B = "
-        call print_matrix(B, dims(3), dims(2))
-    end subroutine
-
-    ! print matrix computed using given method
-    !
-    ! Inputs:
-    !   A: Computed matrix
-    !   nrows: Number of rows
-    !   ncols: Number of columns
-    !   method_name: Method used
-    !
-    subroutine print_matrix_for_method(A, nrows, ncols, method_name)
-        implicit none
-
-        integer*4 nrows, ncols
-        real*8 A(nrows, ncols)
-        character(len=*) method_name
-
-        print *, "Product = "
-        call print_matrix(A, nrows, ncols)
-    end subroutine
-
-    ! print matrix in a nice format
-    !
-    ! Inputs:
-    !   M: Matrix to print
-    !   nrows: Number of rows
-    !   ncols: Number of columns
-    !
-    subroutine print_matrix(M, nrows, ncols)
-        implicit none
-
-        integer*4 ii, nrows, ncols
-        real*8 M(nrows, ncols)
-
-        do ii = 1, nrows
-            print '(20f7.2)', M(ii, 1:ncols)
-        end do
-    end subroutine
-
-end module
-
-
 program exercise_1
     use arg_validate
     use arg_parse_mat_mul
-    use debug
     use mat_ops
     implicit none
 
@@ -178,6 +115,12 @@ program exercise_1
 
     ! parse command-line options
     call parse_cmd_args()
+
+    ! check multiplication method is valid
+    if (mat_mul_method .ne. "matmul" .and. mat_mul_method .ne. "row-col" .and. mat_mul_method .ne. "col-row") then
+        print *, "Invalid matrix multiplication method. Options are: matmul, row-col, col-row"
+        stop
+    end if
 
     ! check if dimensions are integers
     call check_dims_integers(char_dimensions, dims, 3)
@@ -213,7 +156,10 @@ program exercise_1
 
     if (debug_mode) then
         print *, "Running in debug mode ..."
-        call print_input_matrices(matrixA, matrixB, dims)
+        print *, "Matrix A = "
+        call print_real_matrix(matrixA, dims(1), dims(3))
+        print *, "Matrix B = "
+        call print_real_matrix(matrixB, dims(3), dims(2))
     end if
 
     ! call intrinsic method
@@ -222,13 +168,14 @@ program exercise_1
             matprod = matmul(matrixA, matrixB)
         else if (mat_mul_method .eq. "row-col") then
             call matmul_row_col(matrixA, matrixB, matprod, dims)
-        else if (mat_mul_method .eq. "col-row") then
+        else
             call matmul_col_row(matrixA, matrixB, matprod, dims)
         end if
     call cpu_time(finish)
 
     if (debug_mode) then
-        call print_matrix_for_method(matprod, dims(1), dims(2), mat_mul_method)
+        print *, "Product ="
+        call print_real_matrix(matprod, dims(1), dims(2))
     end if
     print "('Elapsed time = ', es16.10)", finish - start
 
