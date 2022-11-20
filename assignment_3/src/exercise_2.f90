@@ -164,6 +164,9 @@ program exercise_2
     use arg_parse
     implicit none
 
+    ! for displaying command-line arguments
+    character(len=8) arg_char
+
     ! to store hermitian matrix
     complex*16, dimension(:, :), allocatable :: H
 
@@ -183,11 +186,16 @@ program exercise_2
     call parse_cmd_args()
     print *, "mat_type = ", mat_type
     print *, "output_filename = ", output_filename
-    print *, "ndim =", ndim
-    print *, "nsamples =", nsamples
-    print *, "nbins =", nbins
-    print *, "min_val =", min_val
-    print *, "max_val =", max_val
+    write (arg_char, "(i8)") ndim
+    print *, "ndim = ", adjustl(arg_char)
+    write (arg_char, "(i8)") nsamples
+    print *, "nsamples = ", adjustl(arg_char)
+    write (arg_char, "(i8)") nbins
+    print *, "nbins = ", adjustl(arg_char)
+    write (arg_char, "(f6.3)") min_val
+    print *, "min_val = ", adjustl(arg_char)
+    write (arg_char, "(f6.3)") max_val
+    print *, "max_val = ", adjustl(arg_char)
 
     ! used for computing eigenvalues
     lwork = max(1, 2 * ndim - 1)
@@ -256,14 +264,33 @@ contains
             do jj = 1, ii
                 if (ii /= jj) then
                     ! sample random complex numbers off the diagonal
-                    H(ii, jj) = cmplx(RAND(0)*2 - 1, RAND(0)*2 - 1)
+                    H(ii, jj) = cmplx(rand(0)*2 - 1, rand(0)*2 - 1)
                     H(jj, ii) = conjg(h(ii, jj))
                 else
                     ! sample real numbers on the diagonal
-                    H(ii, ii) = RAND(0)*2 - 1
+                    H(ii, ii) = rand(0)*2 - 1
                 end if
             end do
         end do
+
+        ! integer cnt
+        ! integer n_upper
+        ! complex*16, dimension(:), allocatable :: AP
+        ! integer, dimension(4) :: iseed
+        ! n_upper = n * (n - 1) / 2
+        ! allocate(AP(n_upper))
+        ! iseed = (/0, 1, 2, 3/)
+        ! call zlarnv(2, iseed, n_upper, AP)
+
+        ! cnt = 1
+        ! do ii = 1, n
+        !     print *, ii, cnt, cnt+n-ii-1, AP(cnt:cnt+n-ii-1)
+        !     H(ii, ii+1:n) = AP(cnt:cnt+n-ii-1)
+        !     H(ii+1:n, ii) = conjg(AP(cnt:cnt+n-ii-1))
+        !     cnt = cnt + n - ii
+        ! end do
+
+        ! deallocate(AP)
     end function
 
     function rand_real_diag_matrix(n) result(H)

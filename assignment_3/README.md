@@ -110,6 +110,25 @@ where the arguments are
 7. `max_val`: Maximum spacings value of histogram
 8. `debug`: Flag indicating whether to run in debug mode, which prints the matrix, eigenvalues, spacings, and their average for each sample
 
+Here is an example:
+
+```
+$ compiled/exercise_2 --ndim 2 -d
+ mat_type = hermitian                                         
+ output_filename = histogram.csv                                     
+ ndim = 2       
+ nsamples = 1       
+ nbins = 100     
+ min_val = 0.000   
+ max_val = 5.000   
+ Sampled Hermitian matrix =
+-1.0000 +0.0000i   -0.7369 -0.5112i
+-0.7369 +0.5112i   -0.0827 +0.0000i
+ Eigenvalues =  -1.5486887628051993       0.46600424589846079     
+ Normalized eigenvalue spacings =   1.0000000000000000     
+ Average eigenvalue spacing =   2.0146930087036603 
+```
+
 ### Exercise 3
 
 The notebook `src/exercise_3.ipynb` can be used to run the program in Exercise 2 and produce fits to the histogram to compare to theory.
