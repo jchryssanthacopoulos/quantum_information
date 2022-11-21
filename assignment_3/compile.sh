@@ -15,6 +15,7 @@ EXTRA_ARGS="-fno-range-check -J compiled -llapack"
 ###########################
 echo "Compiling modules ..."
 gfortran -c $SRC_DIR/arg_validate.f90 -o $DEST_DIR/arg_validate.o $EXTRA_ARGS
+gfortran -c $SRC_DIR/histogram.f90 -o $DEST_DIR/histogram.o $EXTRA_ARGS
 gfortran -c $SRC_DIR/mat_ops.f90 -o $DEST_DIR/mat_ops.o $EXTRA_ARGS
 
 
@@ -33,4 +34,4 @@ gfortran $DEST_DIR/mat_ops.o $DEST_DIR/arg_validate.o $SRC_DIR/exercise_1.f90 -o
 ### Compile Exercise 2 ###
 ##########################
 echo "Compiling Exercise 2 ..."
-gfortran $SRC_DIR/exercise_2.f90 -o $DEST_DIR/exercise_2 $EXTRA_ARGS
+gfortran $DEST_DIR/histogram.o $DEST_DIR/mat_ops.o $SRC_DIR/exercise_2.f90 -o $DEST_DIR/exercise_2 $EXTRA_ARGS

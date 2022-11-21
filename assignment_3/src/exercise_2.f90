@@ -1,60 +1,30 @@
 ! Exercise 2
 ! ==========
 !
+! This program computes the normalized eigenvalue spacings for a given matrix type and saves them to a file
+!
+! Command-line arguments:
+!   mat_type: Type of matrix to diagonalize (options are `hermitian` and `diag`) (default = "hermitian")
+!   output_filename: Name of file to save the output histogram (default = "histogram.csv")
+!   ndim: Number of rows and columns of the matrix (default = 10)
+!   nsamples: Number of random matrix to sample to produce histogram (default = 1)
+!   nbins: Number of bins to use to produce histogram (default = 100)
+!   min_val: Minimum spacings value of histogram (default = 0.0)
+!   max_val: Maximum spacings value of histogram (default = 5.0)
+!   debug: Flag indicating whether to run in debug mode, which prints the matrix, eigenvalues, spacings, and
+!     their average for each sample (default = False)
+!
+! Returns:
+!   File of normalized eigenvalue spacings
+!   If debug flag passed, matrices, eigenvalues, and other information are also displayed
+!
 
 
-module histogram
-
-contains
-    subroutine make_hist(values, nbins, min_val, max_val, filename)
-        implicit none
-
-        integer nbins
-        real*8 min_val, max_val
-        real*8, dimension(:), intent(in) :: values
-        character(len=*), intent(in) :: filename
-
-        integer ii, jj
-        integer bin_count
-        real*8 dx, norm_factor, left_bin_edge
-
-        ! compute spacing and normalization factor
-        dx = (max_val - min_val) / nbins
-        norm_factor = size(values) * dx
-
-        open(1, file=filename)
-        write(1, *) "left_edges,centers,count,norm_count"
-
-        ! compute histogram
-        left_bin_edge = min_val
-
-        do ii = 1, nbins
-            bin_count = 0
-
-            do jj = 1, size(values, 1)
-                if (values(jj) >= left_bin_edge .and. values(jj) <= left_bin_edge + dx) then
-                    bin_count = bin_count + 1
-                end if
-            end do
-
-            ! write entry to file
-            write(1, '(f10.7, ",", f10.7, ",", i10, ",", f10.7)') &
-                left_bin_edge, left_bin_edge + dx / 2, bin_count, bin_count / norm_factor
-
-            left_bin_edge = left_bin_edge + dx
-        end do
-
-        close(1)
-    end subroutine
-
-end module
-
-
-module arg_parse
+! this module parses the command-line arguments needed to compute the histogram
+module arg_parse_eigenvalues
     implicit none
 
     integer ii
-
     
     character(len=50) mat_type
     character(len=50) output_filename
@@ -160,8 +130,9 @@ end module
 
 
 program exercise_2
+    use arg_parse_eigenvalues
     use histogram
-    use arg_parse
+    use mat_ops
     implicit none
 
     ! for displaying command-line arguments
@@ -218,12 +189,12 @@ program exercise_2
 
         ! display matrix
         if (debug_mode) then
-            print *, "Sampled Hermitian matrix ="
-            call print_matrix(H, ndim)
+            print *, "Sampled matrix ="
+            call print_complex_matrix(H, ndim)
         end if
 
         ! compute eigenvalues in ascending order
-        call zheev('N', 'U', ndim, H, ndim, eigvals, work, lwork, rwork, info)
+        call zheev("N", "U", ndim, H, ndim, eigvals, work, lwork, rwork, info)
 
         ! compute eigenvalue spacings and average
         ave_delta_eigvals = (eigvals(ndim) - eigvals(1)) / (ndim - 1)
@@ -253,69 +224,5 @@ program exercise_2
     call make_hist(all_norm_eigval_spacings, nbins, min_val, max_val, output_filename)
 
     deallocate(H, eigvals, norm_eigval_spacings, all_norm_eigval_spacings, work, rwork)
-
-contains
-    function rand_hermitian_matrix(n) result(H)
-        integer n
-        integer ii, jj
-        complex*16, dimension(n, n) :: H
-
-        do ii = 1, n
-            do jj = 1, ii
-                if (ii /= jj) then
-                    ! sample random complex numbers off the diagonal
-                    H(ii, jj) = cmplx(rand(0)*2 - 1, rand(0)*2 - 1)
-                    H(jj, ii) = conjg(h(ii, jj))
-                else
-                    ! sample real numbers on the diagonal
-                    H(ii, ii) = rand(0)*2 - 1
-                end if
-            end do
-        end do
-
-        ! integer cnt
-        ! integer n_upper
-        ! complex*16, dimension(:), allocatable :: AP
-        ! integer, dimension(4) :: iseed
-        ! n_upper = n * (n - 1) / 2
-        ! allocate(AP(n_upper))
-        ! iseed = (/0, 1, 2, 3/)
-        ! call zlarnv(2, iseed, n_upper, AP)
-
-        ! cnt = 1
-        ! do ii = 1, n
-        !     print *, ii, cnt, cnt+n-ii-1, AP(cnt:cnt+n-ii-1)
-        !     H(ii, ii+1:n) = AP(cnt:cnt+n-ii-1)
-        !     H(ii+1:n, ii) = conjg(AP(cnt:cnt+n-ii-1))
-        !     cnt = cnt + n - ii
-        ! end do
-
-        ! deallocate(AP)
-    end function
-
-    function rand_real_diag_matrix(n) result(H)
-        integer n
-        integer ii
-        complex*16, dimension(n, n) :: H
-
-        H = 0
-
-        do ii = 1, n
-            ! sample real numbers on the diagonal
-            H(ii, ii) = RAND(0)*2 - 1
-        end do
-    end function
-
-    subroutine print_matrix(M, n)
-        implicit none
-
-        integer n
-        integer ii
-        complex*16 M(n, n)
-
-        do ii = 1, n
-            print '(*(sp, f7.4, 1x, f7.4, "i", 3x))', M(ii, :)
-        end do
-    end subroutine
 
 end program

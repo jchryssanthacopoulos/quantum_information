@@ -81,6 +81,54 @@ contains
         end do
     end function
 
+    ! generate random hermitian matrix
+    !
+    ! Inputs:
+    !   n: Number of rows and columns of matrix
+    !
+    ! Returns:
+    !   H: Generated matrix
+    !
+    function rand_hermitian_matrix(n) result(H)
+        integer n
+        integer ii, jj
+        complex*16 H(n, n)
+
+        do ii = 1, n
+            do jj = 1, ii
+                if (ii /= jj) then
+                    ! sample random complex numbers off the diagonal
+                    H(ii, jj) = cmplx(rand(0)*2 - 1, rand(0)*2 - 1)
+                    H(jj, ii) = conjg(H(ii, jj))
+                else
+                    ! sample real numbers on the diagonal
+                    H(ii, ii) = rand(0)*2 - 1
+                end if
+            end do
+        end do
+    end function
+
+    ! generate random real diagonal matrix
+    !
+    ! Inputs:
+    !   n: Number of rows and columns of matrix
+    !
+    ! Returns:
+    !   H: Generated matrix
+    !
+    function rand_real_diag_matrix(n) result(H)
+        integer n
+        integer ii
+        complex*16, dimension(n, n) :: H
+
+        H = 0
+
+        do ii = 1, n
+            ! sample real numbers on the diagonal
+            H(ii, ii) = rand(0)*2 - 1
+        end do
+    end function
+
     ! print real matrix in a nice format
     !
     ! Inputs:
@@ -96,6 +144,24 @@ contains
 
         do ii = 1, nrows
             print '(20f7.2)', M(ii, 1:ncols)
+        end do
+    end subroutine
+
+    ! print square complex matrix in a nice format
+    !
+    ! Inputs:
+    !   M: Matrix to print
+    !   n: Number of rows and columns
+    !
+    subroutine print_complex_matrix(M, n)
+        implicit none
+
+        integer n
+        integer ii
+        complex*16 M(n, n)
+
+        do ii = 1, n
+            print '(*(sp, f7.4, 1x, f7.4, "i", 3x))', M(ii, :)
         end do
     end subroutine
 

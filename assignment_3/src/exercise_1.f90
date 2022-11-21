@@ -3,7 +3,6 @@
 !
 ! This program multiplies two matrices using the specified method and returns the time taken
 !
-! Inputs:
 ! Command-line arguments:
 !   mat_mul_method: Method to use to multiply the matrices (options are matmul, row-col, and col-row)
 !     (default = `matmul`)
@@ -103,8 +102,8 @@ end module
 
 
 program exercise_1
-    use arg_validate
     use arg_parse_mat_mul
+    use arg_validate
     use mat_ops
     implicit none
 
