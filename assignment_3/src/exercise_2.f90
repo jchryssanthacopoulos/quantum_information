@@ -32,7 +32,7 @@ module arg_parse_eigenvalues
     real*8 min_val, max_val
     logical debug_mode
 
-    ! default paramters
+    ! default parameters
     character(len=50), parameter :: mat_type_default = "hermitian"
     character(len=50), parameter :: output_filename_default = "histogram.csv"
     integer, parameter :: ndim_default = 10
