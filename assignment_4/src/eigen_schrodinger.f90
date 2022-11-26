@@ -1,6 +1,17 @@
 ! Eigen Schrodinger
 ! =================
 !
+! This program solves the time-independent Schrodinger equation for a harmonic oscillator through discretization
+!
+! Command-line arguments:
+!   xmin (float): Minimum x value in the domain
+!   xmax (float): Maximum x value in the domain
+!   npoints: Number of points to discretize domain
+!   output_filename: Name of file to save eigenvalues and eigenvectors
+!
+! Returns:
+!   Saves number of points, x grid, eigenvalues, and eigenvectors to the specified file
+!
 
 
 program eigen_schrodinger
@@ -28,24 +39,25 @@ program eigen_schrodinger
     print *, "output_filename = ", output_filename
 
     ! allocate memory
-    allocate(x_grid(npoints + 1))
-    allocate(H_diag(npoints + 1))
-    allocate(H_off_diag(npoints))
-    allocate(eigenvectors(npoints + 1, npoints + 1))
-    allocate(work(2 * npoints))
+    allocate(x_grid(npoints))
+    allocate(H_diag(npoints))
+    allocate(H_off_diag(npoints - 1))
+    allocate(eigenvectors(npoints, npoints))
+    allocate(work(2 * (npoints - 1)))
 
     ! get spacing
-    dx = (xmax - xmin) / npoints
+    dx = (xmax - xmin) / (npoints - 1)
 
+    ! discretize Hamiltonian
     H_off_diag = -1 / (2 * dx ** 2)
 
-    do ii = 1, npoints + 1
+    do ii = 1, npoints
         x_grid(ii) = xmin + (ii - 1) * dx
         H_diag(ii) = 1 / (dx ** 2) + 0.5 * x_grid(ii) ** 2
     end do
 
     ! compute eigenvalues and eigenvectors
-    call dsteqr("I", npoints + 1, H_diag, H_off_diag, eigenvectors, npoints + 1, work, info)
+    call dsteqr("I", npoints, H_diag, H_off_diag, eigenvectors, npoints, work, info)
 
     if (info .eq. 0) then
         print *, "Success!"
@@ -55,9 +67,9 @@ program eigen_schrodinger
 
     ! write solution to file
     open(1, file=output_filename)
-    write(1, *) "N =", npoints + 1
+    write(1, *) "N =", npoints
     write(1, *) "x grid =", x_grid
-    do ii = 1, npoints + 1
+    do ii = 1, npoints
         write(1, *) "Eigenvalue =", H_diag(ii)
         write(1, *) "Eigenvector =" 
         write(1, *) eigenvectors(ii, :)

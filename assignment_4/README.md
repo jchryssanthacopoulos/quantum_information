@@ -41,5 +41,20 @@ The program generates the eigenvectors and eigenvalues of the time-independent q
 type:
 
 ```
-compiled/eigen_schrodinger
+compiled/eigen_schrodinger [--xmin <xmin> --xmax <xmax> --npoints <npoints> --output_filename <output_filename>]
 ```
+
+where the command-line arguments are:
+
+1. `xmin`: Minimum x value in the domain to solve for
+2. `xmax`: Maximum x value
+3. `npoints`: Number of points to form discretization grid
+4. `output_filename`: Name of output file to save eigenvalues and eigenvectors
+
+To run several discretization schemes in batch, run
+
+```
+./solve_schrodinger.sh
+```
+
+To plot the eigenvectors and eigenvalues, run the notebook `src/plot_eigenvectors.ipynb`.
