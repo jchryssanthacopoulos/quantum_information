@@ -27,8 +27,8 @@ program eigen_schrodinger
 
     ! number of points
     N = 1000
-    x_min = -25.0
-    x_max = 25.0
+    x_min = -5.0
+    x_max = 5.0
 
     ! allocate memory
     allocate(x_grid(N + 1))
