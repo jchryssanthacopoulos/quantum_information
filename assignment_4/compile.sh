@@ -10,8 +10,15 @@ DEST_DIR="compiled"
 EXTRA_ARGS="-fno-range-check -J compiled -llapack"
 
 
+#######################
+### Compile Modules ###
+#######################
+echo "Compiling modules ..."
+gfortran -c $SRC_DIR/arg_parse.f90 -o $DEST_DIR/arg_parse.o $EXTRA_ARGS
+
+
 ########################
 ### Compile programs ###
 ########################
 echo "Compiling eigen schrodinger ..."
-gfortran $SRC_DIR/eigen_schrodinger.f90 -o $DEST_DIR/eigen_schrodinger $EXTRA_ARGS
+gfortran $DEST_DIR/arg_parse.o $SRC_DIR/eigen_schrodinger.f90 -o $DEST_DIR/eigen_schrodinger $EXTRA_ARGS
