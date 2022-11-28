@@ -11,6 +11,7 @@
 !
 ! Returns:
 !   Saves number of points, x grid, eigenvalues, and eigenvectors to the specified file
+!   It also displays the time needed to diagonalize to the screen
 !
 
 
@@ -27,6 +28,9 @@ program eigen_schrodinger
     real*8, dimension(:), allocatable :: H_diag, H_off_diag
     real*8, dimension(:,:), allocatable :: eigenvectors
     real*8, dimension(:), allocatable :: work
+
+    ! variables to clock time to diagonalize
+    real*8 start, finish
 
     ! read x boundaries and number of discretization points
     call parse_cmd_args()
@@ -57,7 +61,10 @@ program eigen_schrodinger
     end do
 
     ! compute eigenvalues and eigenvectors
-    call dsteqr("I", npoints, H_diag, H_off_diag, eigenvectors, npoints, work, info)
+    call cpu_time(start)
+        call dsteqr("I", npoints, H_diag, H_off_diag, eigenvectors, npoints, work, info)
+    call cpu_time(finish)
+    print "('Elapsed time to diagonalize = ', es16.10)", finish - start
 
     if (info .eq. 0) then
         print *, "Success!"
