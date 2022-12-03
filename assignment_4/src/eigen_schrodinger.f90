@@ -6,8 +6,8 @@
 ! Command-line arguments:
 !   xmin (float): Minimum x value in the domain
 !   xmax (float): Maximum x value in the domain
-!   npoints: Number of points to discretize domain
-!   output_filename: Name of file to save eigenvalues and eigenvectors
+!   npoints (int): Number of points to discretize domain
+!   output_filename (str): Name of file to save eigenvalues and eigenvectors
 !
 ! Returns:
 !   Saves number of points, x grid, eigenvalues, and eigenvectors to the specified file
