@@ -7,7 +7,7 @@
 SRC_DIR="src"
 DEST_DIR="compiled"
 
-EXTRA_ARGS="-fno-range-check -J compiled -llapack"
+EXTRA_ARGS="-L/usr/local/lib/lib -fno-range-check -J compiled -llapack -lfftw3"
 
 
 #######################
