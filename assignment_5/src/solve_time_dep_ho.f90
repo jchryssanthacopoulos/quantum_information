@@ -13,8 +13,31 @@
 !
 
 
-program solve_split_operator
+module split_operator
+
+contains
+
+    ! normalize function using integral with given step
+    !
+    ! Inputs:
+    !   psi: Function to normalize
+    !   step: Step size in the domain to integrate over
+    !
+    subroutine normalize(psi, step)
+        implicit none
+        complex*16, dimension(:), intent(inout) :: psi
+        real*8 step, norm
+
+        norm = sum(psi * conjg(psi) * step)
+        psi = psi / sqrt(norm)
+    end subroutine
+
+end module
+
+
+program solve_time_dep_ho
     use arg_parse
+    use split_operator
     implicit none
 
     ! constants
@@ -26,11 +49,11 @@ program solve_split_operator
 
     ! FFT variables
     integer*8 plan
-    complex*8, dimension(:), allocatable :: psi_transform_in
-    complex*8, dimension(:), allocatable :: psi_transform_out
+    complex*16, dimension(:), allocatable :: psi_transform_in
+    complex*16, dimension(:), allocatable :: psi_transform_out
 
     ! to save wavefunction as a function of time
-    complex*8, dimension(:,:), allocatable :: psixt
+    complex*16, dimension(:,:), allocatable :: psi
 
     ! read x boundaries and number of discretization points
     call parse_cmd_args()
@@ -48,7 +71,7 @@ program solve_split_operator
 
     allocate(x_grid(num_x_pts))
     allocate(t_grid(num_t_pts))
-    allocate(psixt(num_x_pts, num_t_pts))
+    allocate(psi(num_x_pts, num_t_pts))
     allocate(psi_transform_in(num_x_pts))
     allocate(psi_transform_out(num_x_pts))
 
@@ -58,30 +81,35 @@ program solve_split_operator
     dx = (xmax - xmin) / (num_x_pts - 1)
     dt = tmax / (num_t_pts - 1)
 
-    psixt = 0
+    psi = 0
     psi_transform_in = 0
     psi_transform_out = 0
 
     ! initialize state with ground state of harmonic oscillator
     do ii = 1, num_x_pts
         x_grid(ii) = xmin + (ii - 1) * dx
-        psixt(ii, 1) = pi ** (-0.25d0) * exp(-x_grid(ii) ** 2d0 / 2d0)
+        psi(ii, 1) = pi ** (-0.25d0) * exp(-x_grid(ii) ** 2d0 / 2d0)
     end do
 
+    ! normalize
+    call normalize(psi(:, 1), dx)
+
     ! call FFT on ground state
-    psi_transform_in = psixt(:, 1)
+    psi_transform_in = psi(:, 1)
     call dfftw_plan_dft_1d(plan, num_x_pts, psi_transform_in, psi_transform_out, -1, 64)
     call dfftw_execute_dft(plan, psi_transform_in, psi_transform_out)
     call dfftw_destroy_plan(plan)
-    psixt(:, 2) = psi_transform_out
+    psi(:, 2) = psi_transform_out
 
     ! call inverse FFT
     psi_transform_in = psi_transform_out
-    psi_transform_out = 0
     call dfftw_plan_dft_1d(plan, num_x_pts, psi_transform_in, psi_transform_out, 1, 64)
     call dfftw_execute_dft(plan, psi_transform_in, psi_transform_out)
     call dfftw_destroy_plan(plan)
-    psixt(:, 3) = psi_transform_out
+    psi(:, 3) = psi_transform_out
+
+    ! normalize
+    call normalize(psi(:, 3), dx)
 
     do ii = 1, num_t_pts
         t_grid(ii) = (ii - 1) * dt
@@ -92,10 +120,10 @@ program solve_split_operator
     write(1, *) "x grid =", x_grid
     write(1, *) "t grid =", t_grid
     do ii = 1, num_t_pts
-        write(1, *) psixt(:, ii)
+        write(1, *) psi(:, ii)
     end do
     close(1)
 
-    deallocate(x_grid, t_grid, psixt, psi_transform_in, psi_transform_out)
+    deallocate(x_grid, t_grid, psi, psi_transform_in, psi_transform_out)
 
 end program
