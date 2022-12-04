@@ -15,7 +15,149 @@
 
 module split_operator
 
+    real*8, parameter :: pi = 4.d0 * datan(1.d0)
+
 contains
+    ! evolve the state forward using the split operator method
+    !
+    ! Inputs:
+    !   init_state (complex*16 array): Initial state
+    !   final_state (complex*16 array | out): Final state
+    !   x_grid (real*8 array): Grid of x values
+    !   time (real*8): Time of initial state
+    !   tmax (real*8): Maximum time
+    !   Nx (integer): Number of x discretizaton points
+    !   Nt (integer): Number of t discretization points
+    !
+    subroutine evolve_state(init_state, final_state, x_grid, time, tmax, Nx, Nt)
+        implicit none
+
+        integer ii
+
+        ! starting time
+        real*8 time
+
+        ! discretization parameters
+        integer Nx, Nt
+        real*8 xmin, xmax, tmax
+        real*8 dx, dp, dt
+        real*8 x_grid(Nx)
+
+        ! state variables
+        complex*16, dimension(:), intent(in) :: init_state
+        complex*16, dimension(:), intent(inout) :: final_state
+
+        ! FFT variables
+        integer*8 plan
+        complex*16, dimension(:), allocatable :: state_transform
+
+        ! to store kinetic and potential values
+        real*8 T
+        real*8, dimension(:), allocatable :: V
+
+        xmin = x_grid(1)
+        xmax = x_grid(Nx)
+
+        allocate(state_transform(Nx))
+        allocate(V(Nx))
+
+        ! get spacing in space, momentum, and time
+        dx = (xmax - xmin) / (Nx - 1)
+        dp = 2 * pi / (xmax - xmin)
+        dt = tmax / (Nt - 1)
+
+        ! multiply by potential part of Hamiltonian
+        do ii = 1, Nx
+            V(ii) = potential(x_grid(ii), time, tmax)
+            final_state(ii) = cexp(cmplx(0.0, -0.5 * V(ii) * dt)) * init_state(ii)
+        end do
+
+        ! normalize
+        call normalize(final_state, dx)
+
+        ! call FFT to go from coordinate space to momentum space
+        state_transform = 0
+        call dfftw_plan_dft_1d(plan, Nx, final_state, state_transform, -1, 64)
+        call dfftw_execute_dft(plan, final_state, state_transform)
+        call dfftw_destroy_plan(plan)
+
+        ! make sure to normalize in momentum space
+        final_state = state_transform
+        call normalize(final_state, dp)
+
+        ! multiply by kinetic part of Hamiltonian
+        do ii = 1, Nx
+            T = kinetic(ii, Nx, xmin, xmax)
+            final_state(ii) = cexp(cmplx(0.0, -1.0 * T * dt)) * final_state(ii)
+        end do
+
+        call normalize(final_state, dp)
+
+        ! call inverse FFT to go from momentum space to coordinate space
+        state_transform = 0
+        call dfftw_plan_dft_1d(plan, Nx, final_state, state_transform, 1, 64)
+        call dfftw_execute_dft(plan, final_state, state_transform)
+        call dfftw_destroy_plan(plan)
+
+        final_state = state_transform
+        call normalize(final_state, dx)
+
+        ! multiply by potential part of Hamiltonian
+        do ii = 1, Nx
+            final_state(ii) = cexp(cmplx(0.0, -0.5 * V(ii) * dt)) * final_state(ii)
+        end do
+
+        call normalize(final_state, dx)
+
+        deallocate(state_transform, V)
+
+    end subroutine
+
+    ! get potential for given position and time
+    !
+    ! Inputs:
+    !   q (real*8): Position
+    !   t (real*8): Time
+    !   tmax (real*8): Maximum time
+    !
+    ! Returns:
+    !   V (real*8): Potential at given position and time
+    !
+    function potential(q, t, tmax) result(V)
+        implicit none
+
+        real*8 q, t, tmax
+        real*8 V
+
+        V = 0.5 * (q - t / tmax) ** 2
+    end function
+
+    ! get kinetic term at given bin value
+    !
+    ! Inputs:
+    !   bin (integer): Bin
+    !   Nx (integer): Number of total bins
+    !   xmin (real*8): Minimum x value
+    !   xmax (real*8): Maximum x value
+    !
+    ! Returns:
+    !   T (real*8): Kinetc term
+    !
+    function kinetic(bin, Nx, xmin, xmax) result(T)
+        implicit none
+
+        integer bin, Nx
+        real*8 xmin, xmax, p, T
+
+        if (bin <= int(Nx / 2)) then
+            p = 2d0 * pi * bin / (xmax - xmin)
+        else if (bin > int(Nx / 2)) then
+            p = (2d0 * pi * (bin - Nx -1)) / (xmax - xmin)
+        end if
+
+        T = 0.5 * p ** 2
+
+    end function
 
     ! normalize function using integral with given step
     !
@@ -25,11 +167,13 @@ contains
     !
     subroutine normalize(psi, step)
         implicit none
+
         complex*16, dimension(:), intent(inout) :: psi
         real*8 step, norm
 
         norm = sum(psi * conjg(psi) * step)
         psi = psi / sqrt(norm)
+
     end subroutine
 
 end module
@@ -40,17 +184,9 @@ program solve_time_dep_ho
     use split_operator
     implicit none
 
-    ! constants
-    real*8 pi
-
     ! discretization parameters
     real*8 dx, dt
     real*8, dimension(:), allocatable :: x_grid, t_grid
-
-    ! FFT variables
-    integer*8 plan
-    complex*16, dimension(:), allocatable :: psi_transform_in
-    complex*16, dimension(:), allocatable :: psi_transform_out
 
     ! to save wavefunction as a function of time
     complex*16, dimension(:,:), allocatable :: psi
@@ -72,18 +208,12 @@ program solve_time_dep_ho
     allocate(x_grid(num_x_pts))
     allocate(t_grid(num_t_pts))
     allocate(psi(num_x_pts, num_t_pts))
-    allocate(psi_transform_in(num_x_pts))
-    allocate(psi_transform_out(num_x_pts))
-
-    pi = 4.d0 * datan(1.d0)
 
     ! get spacing
     dx = (xmax - xmin) / (num_x_pts - 1)
     dt = tmax / (num_t_pts - 1)
 
     psi = 0
-    psi_transform_in = 0
-    psi_transform_out = 0
 
     ! initialize state with ground state of harmonic oscillator
     do ii = 1, num_x_pts
@@ -94,25 +224,14 @@ program solve_time_dep_ho
     ! normalize
     call normalize(psi(:, 1), dx)
 
-    ! call FFT on ground state
-    psi_transform_in = psi(:, 1)
-    call dfftw_plan_dft_1d(plan, num_x_pts, psi_transform_in, psi_transform_out, -1, 64)
-    call dfftw_execute_dft(plan, psi_transform_in, psi_transform_out)
-    call dfftw_destroy_plan(plan)
-    psi(:, 2) = psi_transform_out
-
-    ! call inverse FFT
-    psi_transform_in = psi_transform_out
-    call dfftw_plan_dft_1d(plan, num_x_pts, psi_transform_in, psi_transform_out, 1, 64)
-    call dfftw_execute_dft(plan, psi_transform_in, psi_transform_out)
-    call dfftw_destroy_plan(plan)
-    psi(:, 3) = psi_transform_out
-
-    ! normalize
-    call normalize(psi(:, 3), dx)
-
+    ! generate t lattice
     do ii = 1, num_t_pts
         t_grid(ii) = (ii - 1) * dt
+    end do
+
+    ! propagate state
+    do ii = 2, num_t_pts
+        call evolve_state(psi(:, ii - 1), psi(:, ii), x_grid, t_grid(ii), tmax, num_x_pts, num_t_pts)
     end do
 
     ! write solution to file
@@ -124,6 +243,6 @@ program solve_time_dep_ho
     end do
     close(1)
 
-    deallocate(x_grid, t_grid, psi, psi_transform_in, psi_transform_out)
+    deallocate(x_grid, t_grid, psi)
 
 end program
