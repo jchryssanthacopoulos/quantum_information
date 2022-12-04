@@ -29,13 +29,12 @@ contains
     !   Nx (integer): Number of x discretizaton points
     !   Nt (integer): Number of t discretization points
     !
-    subroutine evolve_state(init_state, final_state, x_grid, time, tmax, Nx, Nt)
+    subroutine evolve_state(init_state, final_state, x_grid, time, tmax, Nx, Nt, debug)
         implicit none
 
         integer ii
-
-        ! starting time
         real*8 time
+        logical debug
 
         ! discretization parameters
         integer Nx, Nt
@@ -52,13 +51,14 @@ contains
         complex*16, dimension(:), allocatable :: state_transform
 
         ! to store kinetic and potential values
-        real*8 T
+        real*8, dimension(:), allocatable :: T
         real*8, dimension(:), allocatable :: V
 
         xmin = x_grid(1)
         xmax = x_grid(Nx)
 
         allocate(state_transform(Nx))
+        allocate(T(Nx))
         allocate(V(Nx))
 
         ! get spacing in space, momentum, and time
@@ -76,7 +76,6 @@ contains
         call normalize(final_state, dx)
 
         ! call FFT to go from coordinate space to momentum space
-        state_transform = 0
         call dfftw_plan_dft_1d(plan, Nx, final_state, state_transform, -1, 64)
         call dfftw_execute_dft(plan, final_state, state_transform)
         call dfftw_destroy_plan(plan)
@@ -87,14 +86,13 @@ contains
 
         ! multiply by kinetic part of Hamiltonian
         do ii = 1, Nx
-            T = kinetic(ii, Nx, xmin, xmax)
-            final_state(ii) = cexp(cmplx(0.0, -1.0 * T * dt)) * final_state(ii)
+            T(ii) = kinetic(ii, Nx, xmin, xmax)
+            final_state(ii) = cexp(cmplx(0.0, -1.0 * T(ii) * dt)) * final_state(ii)
         end do
 
         call normalize(final_state, dp)
 
         ! call inverse FFT to go from momentum space to coordinate space
-        state_transform = 0
         call dfftw_plan_dft_1d(plan, Nx, final_state, state_transform, 1, 64)
         call dfftw_execute_dft(plan, final_state, state_transform)
         call dfftw_destroy_plan(plan)
@@ -109,7 +107,13 @@ contains
 
         call normalize(final_state, dx)
 
-        deallocate(state_transform, V)
+        if (debug) then
+            print *, "time = ", time
+            print *, "T = ", T
+            print *, "V = ", V
+        end if
+
+        deallocate(state_transform, T, V)
 
     end subroutine
 
@@ -141,7 +145,7 @@ contains
     !   xmax (real*8): Maximum x value
     !
     ! Returns:
-    !   T (real*8): Kinetc term
+    !   T (real*8): Kinetic term
     !
     function kinetic(bin, Nx, xmin, xmax) result(T)
         implicit none
@@ -150,9 +154,9 @@ contains
         real*8 xmin, xmax, p, T
 
         if (bin <= int(Nx / 2)) then
-            p = 2d0 * pi * bin / (xmax - xmin)
+            p = 2 * pi * (bin - 1) / (xmax - xmin)
         else if (bin > int(Nx / 2)) then
-            p = (2d0 * pi * (bin - Nx -1)) / (xmax - xmin)
+            p = 2 * (pi * (bin - Nx - 1)) / (xmax - xmin)
         end if
 
         T = 0.5 * p ** 2
@@ -203,6 +207,8 @@ program solve_time_dep_ho
     print *, "num_x_pts = ", adjustl(arg_char)
     write (arg_char, "(i8)") num_t_pts
     print *, "num_t_pts = ", adjustl(arg_char)
+    write (arg_char, "(l1)") debug
+    print *, "debug = ", adjustl(arg_char)
     print *, "output_filename = ", output_filename
 
     allocate(x_grid(num_x_pts))
@@ -229,9 +235,14 @@ program solve_time_dep_ho
         t_grid(ii) = (ii - 1) * dt
     end do
 
+    if (debug) then
+        print *, "x_grid = ", x_grid
+        print *, "t_grid = ", t_grid
+    end if
+
     ! propagate state
     do ii = 2, num_t_pts
-        call evolve_state(psi(:, ii - 1), psi(:, ii), x_grid, t_grid(ii), tmax, num_x_pts, num_t_pts)
+        call evolve_state(psi(:, ii - 1), psi(:, ii), x_grid, t_grid(ii), tmax, num_x_pts, num_t_pts, debug)
     end do
 
     ! write solution to file

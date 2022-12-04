@@ -7,6 +7,7 @@ module arg_parse
     real*8 xmin, xmax, tmax
     integer num_x_pts, num_t_pts
     character(len=50) output_filename
+    logical debug
 
     ! default parameters
     real*8, parameter :: xmin_default = -5.0
@@ -15,6 +16,7 @@ module arg_parse
     integer, parameter :: num_x_pts_default = 1000
     integer, parameter :: num_t_pts_default = 100
     character(len=50), parameter :: output_filename_default = "solution.txt"
+    logical, parameter :: debug_default = .false.
 
     ! for displaying command-line arguments
     character(len=8) arg_char
@@ -34,6 +36,7 @@ contains
         num_x_pts = num_x_pts_default
         num_t_pts = num_t_pts_default
         output_filename = output_filename_default
+        debug = debug_default
 
         num_args = command_argument_count()
 
@@ -85,6 +88,8 @@ contains
                         ii = ii + 1
                     end if
 
+                case ("-d", "--debug")
+                    debug = .true.
             end select
 
             ii = ii + 1
