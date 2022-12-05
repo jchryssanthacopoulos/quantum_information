@@ -199,6 +199,9 @@ program solve_time_dep_ho
     ! to save wavefunction as a function of time
     complex*16, dimension(:,:), allocatable :: psi
 
+    ! variables to clock algorithm
+    real*8 start, finish
+
     ! read x boundaries and number of discretization points
     call parse_cmd_args()
     write (arg_char, "(f7.3)") xmin
@@ -245,9 +248,12 @@ program solve_time_dep_ho
     end if
 
     ! propagate state
-    do ii = 2, num_t_pts
-        call evolve_state(psi(:, ii - 1), psi(:, ii), x_grid, t_grid(ii), tmax, num_x_pts, num_t_pts, debug)
-    end do
+    call cpu_time(start)
+        do ii = 2, num_t_pts
+            call evolve_state(psi(:, ii - 1), psi(:, ii), x_grid, t_grid(ii), tmax, num_x_pts, num_t_pts, debug)
+        end do
+    call cpu_time(finish)
+    print "('Elapsed time to evolve state = ', es16.10)", finish - start
 
     ! write solution to file
     open(1, file=output_filename)
