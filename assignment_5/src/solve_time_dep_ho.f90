@@ -10,6 +10,10 @@
 !   num_x_pts (int): Number of points to discretize x coordinate
 !   num_t_pts (int): Number of points to discretize t coordinate
 !   output_filename (str): Name of file to save solution
+!   debug (logical): Whether to print debug information
+!
+! Returns:
+!   Saves the wavefunction and discretization parameters to the specified file
 !
 
 
