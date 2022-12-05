@@ -1,5 +1,5 @@
-! Solve Split Operator
-! ====================
+! Solve Time-Dependent Harmonic Oscillator
+! ========================================
 !
 ! This program solves the time-dependent quantum harmonic oscillator using the split operator method
 !
