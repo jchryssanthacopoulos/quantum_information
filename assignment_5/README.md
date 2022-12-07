@@ -79,6 +79,7 @@ $ compiled/solve_time_dep_ho --xmin -15 --xmax 15 --tmax 10 --num_x_pts 100 --nu
  num_t_pts = 100     
  debug = F       
  output_filename = solution.txt
+Elapsed time to evolve state = 2.9180000000E-03
 ```
 
 To run several discretization schemes in batch, run
