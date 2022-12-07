@@ -67,7 +67,7 @@ contains
 
         ! get spacing in space, momentum, and time
         dx = (xmax - xmin) / (Nx - 1)
-        dp = 2 * pi / (xmax - xmin)
+        dp = 2 * pi * Nx / (xmax - xmin)
         dt = tmax / (Nt - 1)
 
         ! multiply by potential part of Hamiltonian
