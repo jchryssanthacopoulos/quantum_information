@@ -13,4 +13,13 @@ for T in 100 125 150 175 200 225 250 275 300 325 350 400 500 600 700 800 900 100
         --tmax $T
 done
 
+
+for Nt in 50 100 200 500 1000 2500 5000 10000; do
+    echo "Running for Nt = $Nt ..."
+    compiled/solve_time_dep_ho \
+        --output_filename data/psi_Nt_${Nt}_tmax_10.txt \
+        --num_t_pts ${Nt}
+done
+
+
 echo "Success!"
