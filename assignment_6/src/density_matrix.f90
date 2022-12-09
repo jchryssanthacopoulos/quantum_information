@@ -78,6 +78,32 @@ contains
 
     end function
 
+    ! compute density matrix of state
+    !
+    ! Inputs:
+    !   state (complex*16 array): Wavefunction to compute density matrix for
+    !
+    ! Returns:
+    !   rho (complex*16 matrix): Density matrix
+    !
+    function compute_density_matrix(state) result(rho)
+        implicit none
+
+        integer dim
+        complex*16, dimension(:) :: state
+        complex*16, dimension(:, :), allocatable :: rho
+        complex*16, dimension(: ,:), allocatable :: bra, ket
+
+        dim = size(state)
+
+        allocate(rho(dim, dim), bra(1, dim), ket(dim, 1))
+
+        ket(:, 1) = state
+        bra(1, :) = conjg(state)
+
+        rho = matmul(ket, bra)
+    end function
+
     ! convert a single-dimensional tensor index into matrix form
     !
     ! Example: For a N=2 qubit system, you have
@@ -143,6 +169,22 @@ contains
         end do
     end subroutine
 
+    ! print square complex matrix in a nice format
+    !
+    ! Inputs:
+    !   M: Matrix to print
+    !
+    subroutine print_complex_matrix(M)
+        implicit none
+
+        integer ii
+        complex*16, dimension(:, :) :: M
+
+        do ii = 1, size(M, 1)
+            print '(*(sp, f7.4, 1x, f7.4, "i", 3x))', M(ii, :)
+        end do
+    end subroutine
+
 end module
 
 
@@ -152,6 +194,7 @@ program density_matrix
     implicit none
 
     complex*16, dimension(:), allocatable :: state
+    complex(8), dimension(:, :), allocatable :: rho
 
     ! variables to clock algorithm
     real*8 start, finish
@@ -169,16 +212,25 @@ program density_matrix
     print *, "debug = ", adjustl(arg_char)
     print *, "output_filename = ", output_filename
 
+    ! prepare state
     if (system_type .eq. "separable") then
         state = gen_separable_state(N, D, debug)
     end if
 
+    ! compute density matrix
+    rho = compute_density_matrix(state)
+
     if (debug) then
+        ! print state
         print *, "State = "
         call print_complex_vector(state)
         print "('Norm = ', f6.4)", get_norm(state)
+
+        ! print density matrix
+        print *, "Density matrix = "
+        call print_complex_matrix(rho)
     end if
 
-    deallocate(state)
+    deallocate(state, rho)
 
 end program
