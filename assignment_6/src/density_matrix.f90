@@ -73,8 +73,7 @@ contains
             end do
         end do
 
-        deallocate(separable_state)
-        deallocate(mat_indices)
+        deallocate(separable_state, mat_indices)
 
     end function
 
@@ -140,6 +139,7 @@ contains
     !
     ! Returns:
     !   norm (real*8): Norm
+    !
     function get_norm(state) result(norm)
         implicit none
 
@@ -150,6 +150,28 @@ contains
         norm = 0
         do ii = 1, size(state)
             norm = norm + state(ii) * conjg(state(ii))
+        end do
+    end function
+
+    ! get the trace of the given density matrix
+    !
+    ! Inputs:
+    !   rho (complex*16 array): Density matrix
+    !
+    ! Returns:
+    !   tr (complex*16): Trace
+    !
+    function get_trace(rho) result(tr)
+        implicit none
+
+        integer ii
+        complex*16 tr
+        complex*16, dimension(:, :) :: rho
+
+        tr = (0d0, 0d0)
+
+        do ii = 1, size(rho, 1)
+            tr = tr + rho(ii, ii)
         end do
     end function
 
@@ -172,7 +194,7 @@ contains
     ! print square complex matrix in a nice format
     !
     ! Inputs:
-    !   M: Matrix to print
+    !   M (complex*16 matrix): Matrix to print
     !
     subroutine print_complex_matrix(M)
         implicit none
@@ -229,6 +251,7 @@ program density_matrix
         ! print density matrix
         print *, "Density matrix = "
         call print_complex_matrix(rho)
+        print "('Trace = ', f6.4, 1x, sp, f7.4, 'i')", get_trace(rho)
     end if
 
     deallocate(state, rho)
