@@ -25,6 +25,7 @@ contains
     ! Inputs:
     !   N (integer): Number of subsystems
     !   D (integer): Dimension of each subsystem
+    !   debug (logical): Whether to print debug information
     !
     ! Returns:
     !   state (complex*16 array): Wavefunction vector
@@ -101,6 +102,53 @@ contains
         bra(1, :) = conjg(state)
 
         rho = matmul(ket, bra)
+
+        deallocate(bra, ket)
+
+    end function
+
+    ! compute reduced density matrix after tracing over M subsystems
+    !
+    ! Inputs:
+    !   rho (complex*16 array): Density matrix with dimensions (D ** N, D ** N)
+    !   N (integer): Number of subsystems
+    !   D (integer): Dimension of each subsystem
+    !   M (integer): Number of subsystems to trace over
+    !   debug (logical): Whether to print debug information
+    !
+    ! Returns:
+    !   rho_reduced (complex*16 matrix): Reduced density matrix with dimensions (D ** (N - M), D ** (N - M))
+    !
+    function compute_reduced_density_matrix(rho, D, N, M, debug) result(rho_reduced)
+        implicit none
+
+        integer D, N, M
+        integer dim
+        logical debug
+        integer ii, jj, kk, idx1, idx2
+
+        complex*16, dimension(:, :) :: rho
+        complex*16, dimension(:, :), allocatable :: rho_reduced
+
+        dim = D ** (N - M)
+
+        allocate(rho_reduced(dim, dim))
+
+        rho_reduced = 0
+
+        do ii = 1, dim
+            do jj = 1, dim
+                do kk = 1, D ** M
+                    idx1 = kk + (ii - 1) * D ** M
+                    idx2 = kk + (jj - 1) * D ** M
+                    rho_reduced(ii, jj) = rho_reduced(ii, jj) + rho(idx1, idx2)
+                    if (debug) then
+                        print *, ii, jj, idx1, idx2
+                    end if
+                end do
+            end do
+        end do
+
     end function
 
     ! convert a single-dimensional tensor index into matrix form
@@ -216,7 +264,8 @@ program density_matrix
     implicit none
 
     complex*16, dimension(:), allocatable :: state
-    complex(8), dimension(:, :), allocatable :: rho
+    complex*16, dimension(:, :), allocatable :: rho
+    complex*16, dimension(:, :), allocatable :: rho_reduced
 
     ! variables to clock algorithm
     real*8 start, finish
@@ -242,6 +291,9 @@ program density_matrix
     ! compute density matrix
     rho = compute_density_matrix(state)
 
+    ! compute reduced density matrix
+    rho_reduced = compute_reduced_density_matrix(rho, N, D, M, debug)
+
     if (debug) then
         ! print state
         print *, "State = "
@@ -252,8 +304,13 @@ program density_matrix
         print *, "Density matrix = "
         call print_complex_matrix(rho)
         print "('Trace = ', f6.4, 1x, sp, f7.4, 'i')", get_trace(rho)
+
+        ! print reduced density matrix
+        print *, "Reduced density matrix = "
+        call print_complex_matrix(rho_reduced)
+        print "('Trace = ', f6.4, 1x, sp, f7.4, 'i')", get_trace(rho_reduced)
     end if
 
-    deallocate(state, rho)
+    deallocate(state, rho, rho_reduced)
 
 end program
