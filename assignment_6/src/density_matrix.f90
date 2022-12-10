@@ -1,13 +1,13 @@
 ! Generate density matrix
 ! =======================
 !
-! This program generates the density matrix for a many-body quantum state and its reduced matrix
+! This program generates the density matrix for a many-body quantum state and its left and right reduced matrices
 !
 ! Command-line arguments:
 !   N (integer): Number of subsystems in the quantum state
 !   dim (integer): Number of dimensions of each subsystem
 !   type (character): Type of system to compute (options are "separable", "bell", and "generic")
-!   M (integer): Number of subsystems to trace over to compute left and right reduced density matrices
+!   M (integer): Number of subsystems in the right system
 !   output_filename (character): Name of file to save density matrices
 !   debug (integer): Debug level (options are 0, 1, and 2)
 !
@@ -432,6 +432,12 @@ program density_matrix
     ! print entropy
     print "('Entropy of left partition = ', f7.5)", S_L
     print "('Entropy of right partition = ', f7.5)", S_R
+
+    ! write solution to file
+    open(1, file=output_filename)
+    write(1, *) "Entropy of left partition = ", S_L
+    write(1, *) "Entropy of right partition = ", S_R
+    close(1)
 
     deallocate(state, rho, rho_reduced_L, rho_reduced_R)
 
