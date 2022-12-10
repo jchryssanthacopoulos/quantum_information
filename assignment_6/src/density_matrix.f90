@@ -9,7 +9,7 @@
 !   type (character): Type of system to compute (options are "separable", "bell", and "generic")
 !   M (integer): Number of subsystems to trace over to compute left and right reduced density matrices
 !   output_filename (character): Name of file to save density matrices
-!   debug (logical): Whether to print debug information
+!   debug (integer): Debug level (options are 0, 1, and 2)
 !
 ! Returns:
 !   Saves the density matrices to the specified file
@@ -17,6 +17,7 @@
 
 
 module many_body_quantum_state
+    use arg_parse
 
 contains
     ! prepare a separate state with given dimensions
@@ -24,18 +25,18 @@ contains
     ! Inputs:
     !   N (integer): Number of subsystems
     !   D (integer): Dimension of each subsystem
-    !   debug (logical): Whether to print debug information
+    !   debug_level (integer): Debug level
     !
     ! Returns:
     !   state (complex*16 array): State vector
     !
-    function prepare_separable_state(N, D, debug) result(state)
+    function prepare_separable_state(N, D, debug_level) result(state)
         implicit none
 
         integer N, D, dim
         real*8 norm
         integer ii, jj
-        logical debug
+        integer debug_level
 
         complex*16, dimension(:), allocatable :: state
         complex*16, dimension(:, :), allocatable :: separable_state
@@ -64,7 +65,7 @@ contains
         do ii = 1, dim
             mat_indices = tensor2mat(ii, N, D)
 
-            if (debug) then
+            if (debug_level .ge. DEBUG_LEVEL_2) then
                 print *, "Matrix indices for tensor index = ", ii, " are ", mat_indices
             end if
 
@@ -74,6 +75,39 @@ contains
         end do
 
         deallocate(separable_state, mat_indices)
+
+    end function
+
+    ! prepare a generic state with given dimensions
+    !
+    ! Inputs:
+    !   N (integer): Number of subsystems
+    !   D (integer): Dimension of each subsystem
+    !
+    ! Returns:
+    !   state (complex*16 array): State vector
+    !
+    function prepare_generic_state(N, D) result(state)
+        implicit none
+
+        integer N, D, dim
+        real*8 norm
+        integer ii
+
+        complex*16, dimension(:), allocatable :: state
+
+        dim = D ** N
+
+        allocate(state(dim))
+
+        norm = 0
+
+        do ii = 1, dim
+            state(ii) = cmplx(rand(0) * 2 - 1, rand(0) * 2 - 1)
+            norm = norm + state(ii) * conjg(state(ii))
+        end do
+
+        state = state / sqrt(norm)
 
     end function
 
@@ -132,17 +166,17 @@ contains
     !   N (integer): Number of subsystems
     !   D (integer): Dimension of each subsystem
     !   M (integer): Number of subsystems to trace over
-    !   debug (logical): Whether to print debug information
+    !   debug_level (integer): Debug level
     !
     ! Returns:
     !   rho_reduced_L (complex*16 matrix): Left reduced density matrix with dimensions (D ** (N - M), D ** (N - M))
     !
-    function compute_left_reduced_density_matrix(rho, D, N, M, debug) result(rho_reduced_L)
+    function compute_left_reduced_density_matrix(rho, D, N, M, debug_level) result(rho_reduced_L)
         implicit none
 
         integer D, N, M
         integer dim
-        logical debug
+        integer debug_level
         integer ii, jj, kk, idx1, idx2
 
         complex*16, dimension(:, :) :: rho
@@ -160,7 +194,7 @@ contains
                     idx1 = kk + (ii - 1) * D ** M
                     idx2 = kk + (jj - 1) * D ** M
                     rho_reduced_L(ii, jj) = rho_reduced_L(ii, jj) + rho(idx1, idx2)
-                    if (debug) then
+                    if (debug_level .ge. DEBUG_LEVEL_2) then
                         print "('Added rho index ', (i4), (i4), ' to rho reduced L index ', (i4), (i4))", &
                             idx1, idx2, ii, jj
                     end if
@@ -177,17 +211,17 @@ contains
     !   N (integer): Number of subsystems
     !   D (integer): Dimension of each subsystem
     !   M (integer): Number of subsystems to get density matrix for
-    !   debug (logical): Whether to print debug information
+    !   debug_level (integer): Debug level
     !
     ! Returns:
     !   rho_reduced_R (complex*16 matrix): Right reduced density matrix with dimensions (D ** M, D ** M)
     !
-    function compute_right_reduced_density_matrix(rho, D, N, M, debug) result(rho_reduced_R)
+    function compute_right_reduced_density_matrix(rho, D, N, M, debug_level) result(rho_reduced_R)
         implicit none
 
         integer D, N, M
         integer dim
-        logical debug
+        integer debug_level
         integer ii, jj, kk, idx1, idx2
 
         complex*16, dimension(:, :) :: rho
@@ -205,7 +239,7 @@ contains
                     idx1 = ii + (kk - 1) * D ** M
                     idx2 = jj + (kk - 1) * D ** M
                     rho_reduced_R(ii, jj) = rho_reduced_R(ii, jj) + rho(idx1, idx2)
-                    if (debug) then
+                    if (debug_level .ge. DEBUG_LEVEL_2) then
                         print "('Added rho index ', (i4), (i4), ' to rho reduced R index ', (i4), (i4))", &
                             idx1, idx2, ii, jj
                     end if
@@ -346,13 +380,15 @@ program density_matrix
     print *, "type = ", system_type
     write (arg_char, "(i8)") M
     print *, "M = ", adjustl(arg_char)
-    write (arg_char, "(l1)") debug
+    write (arg_char, "(i2)") debug_level
     print *, "debug = ", adjustl(arg_char)
     print *, "output_filename = ", output_filename
 
     ! prepare state
     if (system_type .eq. "separable") then
-        state = prepare_separable_state(N, D, debug)
+        state = prepare_separable_state(N, D, debug_level)
+    else if (system_type .eq. "generic") then
+        state = prepare_generic_state(N, D)
     else if (system_type .eq. "bell") then
         state = prepare_bell_state()
     end if
@@ -361,14 +397,14 @@ program density_matrix
     rho = compute_density_matrix(state)
 
     ! compute left and right reduced density matrices
-    rho_reduced_L = compute_left_reduced_density_matrix(rho, D, N, M, debug)
-    rho_reduced_R = compute_right_reduced_density_matrix(rho, D, N, M, debug)
+    rho_reduced_L = compute_left_reduced_density_matrix(rho, D, N, M, debug_level)
+    rho_reduced_R = compute_right_reduced_density_matrix(rho, D, N, M, debug_level)
 
     ! compute entropy
-    S_L = compute_entropy(rho_reduced_L, debug)
-    S_R = compute_entropy(rho_reduced_R, debug)
+    S_L = compute_entropy(rho_reduced_L, debug_level)
+    S_R = compute_entropy(rho_reduced_R, debug_level)
 
-    if (debug) then
+    if (debug_level .ge. DEBUG_LEVEL_1) then
         ! print state
         print *, "State = "
         call print_complex_vector(state)
@@ -381,7 +417,7 @@ program density_matrix
 
     print "('Trace of density matrix = ', f6.4, 1x, sp, f7.4, 'i')", get_trace(rho)
 
-    if (debug) then
+    if (debug_level .ge. DEBUG_LEVEL_1) then
         ! print reduced density matrices
         print *, "Left reduced density matrix = "
         call print_complex_matrix(rho_reduced_L)

@@ -7,7 +7,7 @@ module arg_parse
     integer N, D, M
     character(len=50) system_type
     character(len=50) output_filename
-    logical debug
+    integer debug_level
 
     ! default parameters
     integer, parameter :: N_default = 2
@@ -15,10 +15,13 @@ module arg_parse
     integer, parameter :: M_default = 1
     character(len=50), parameter :: system_type_default = "separable"
     character(len=50), parameter :: output_filename_default = "density.txt"
-    logical, parameter :: debug_default = .false.
+    integer, parameter :: debug_level_default = 0
 
     ! for displaying command-line arguments
     character(len=8) arg_char
+
+    integer, parameter :: DEBUG_LEVEL_1 = 1
+    integer, parameter :: DEBUG_LEVEL_2 = 2
 
 contains
     ! parse command-line arguments
@@ -34,7 +37,7 @@ contains
         M = M_default
         system_type = system_type_default
         output_filename = output_filename_default
-        debug = debug_default
+        debug_level = debug_level_default
 
         num_args = command_argument_count()
 
@@ -79,8 +82,13 @@ contains
                         ii = ii + 1
                     end if
 
-                case ("-d", "--debug")
-                    debug = .true.
+                case ("--debug")
+                    if (ii < num_args) then
+                        call get_command_argument(ii + 1, arg)
+                        read(arg, *) debug_level
+                        ii = ii + 1
+                    end if
+
             end select
 
             ii = ii + 1

@@ -1,20 +1,22 @@
 ! this module computes the entropy associated with a density matrix
 module entropy
+    use arg_parse
 
 contains
     ! compute entropy of given density matrix
     !
     ! Inputs:
     !   rho (complex*16 array): Density matrix
+    !   debug_level (integer): Debug level
     !
     ! Returns:
     !   S (real*8): Entropy
     !
-    function compute_entropy(rho, debug) result(S)
+    function compute_entropy(rho, debug_level) result(S)
         implicit none
 
         integer ii
-        logical debug
+        integer debug_level
 
         ! density matrix
         integer ndim
@@ -46,7 +48,7 @@ contains
         ! compute eigenvalues
         call zheev("N", "U", ndim, rho_copy, ndim, eigvals, work, lwork, rwork, info)
 
-        if (debug) then
+        if (debug_level .ge. DEBUG_LEVEL_2) then
             print *, "Eigenvalues of density matrix = ", eigvals
         end if
 
