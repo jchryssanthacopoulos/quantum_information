@@ -125,7 +125,7 @@ contains
 
     end function
 
-    ! compute reduced density matrix after tracing over M subsystems
+    ! compute left reduced density matrix after tracing over M subsystems
     !
     ! Inputs:
     !   rho (complex*16 array): Density matrix with dimensions (D ** N, D ** N)
@@ -135,9 +135,9 @@ contains
     !   debug (logical): Whether to print debug information
     !
     ! Returns:
-    !   rho_reduced (complex*16 matrix): Reduced density matrix with dimensions (D ** (N - M), D ** (N - M))
+    !   rho_reduced_L (complex*16 matrix): Left reduced density matrix with dimensions (D ** (N - M), D ** (N - M))
     !
-    function compute_reduced_density_matrix(rho, D, N, M, debug) result(rho_reduced)
+    function compute_left_reduced_density_matrix(rho, D, N, M, debug) result(rho_reduced_L)
         implicit none
 
         integer D, N, M
@@ -146,22 +146,68 @@ contains
         integer ii, jj, kk, idx1, idx2
 
         complex*16, dimension(:, :) :: rho
-        complex*16, dimension(:, :), allocatable :: rho_reduced
+        complex*16, dimension(:, :), allocatable :: rho_reduced_L
 
         dim = D ** (N - M)
 
-        allocate(rho_reduced(dim, dim))
+        allocate(rho_reduced_L(dim, dim))
 
-        rho_reduced = 0
+        rho_reduced_L = 0
 
         do ii = 1, dim
             do jj = 1, dim
                 do kk = 1, D ** M
                     idx1 = kk + (ii - 1) * D ** M
                     idx2 = kk + (jj - 1) * D ** M
-                    rho_reduced(ii, jj) = rho_reduced(ii, jj) + rho(idx1, idx2)
+                    rho_reduced_L(ii, jj) = rho_reduced_L(ii, jj) + rho(idx1, idx2)
                     if (debug) then
-                        print *, ii, jj, idx1, idx2
+                        print "('Added rho index ', (i4), (i4), ' to rho reduced L index ', (i4), (i4))", &
+                            idx1, idx2, ii, jj
+                    end if
+                end do
+            end do
+        end do
+
+    end function
+
+    ! compute right reduced density matrix after tracing over N - M subsystems
+    !
+    ! Inputs:
+    !   rho (complex*16 array): Density matrix with dimensions (D ** N, D ** N)
+    !   N (integer): Number of subsystems
+    !   D (integer): Dimension of each subsystem
+    !   M (integer): Number of subsystems to get density matrix for
+    !   debug (logical): Whether to print debug information
+    !
+    ! Returns:
+    !   rho_reduced_R (complex*16 matrix): Right reduced density matrix with dimensions (D ** M, D ** M)
+    !
+    function compute_right_reduced_density_matrix(rho, D, N, M, debug) result(rho_reduced_R)
+        implicit none
+
+        integer D, N, M
+        integer dim
+        logical debug
+        integer ii, jj, kk, idx1, idx2
+
+        complex*16, dimension(:, :) :: rho
+        complex*16, dimension(:, :), allocatable :: rho_reduced_R
+
+        dim = D ** M
+
+        allocate(rho_reduced_R(dim, dim))
+
+        rho_reduced_R = 0
+
+        do ii = 1, dim
+            do jj = 1, dim
+                do kk = 1, D ** (N - M)
+                    idx1 = ii + (kk - 1) * D ** M
+                    idx2 = jj + (kk - 1) * D ** M
+                    rho_reduced_R(ii, jj) = rho_reduced_R(ii, jj) + rho(idx1, idx2)
+                    if (debug) then
+                        print "('Added rho index ', (i4), (i4), ' to rho reduced R index ', (i4), (i4))", &
+                            idx1, idx2, ii, jj
                     end if
                 end do
             end do
@@ -282,10 +328,11 @@ program density_matrix
     use many_body_quantum_state
     implicit none
 
-    real*8 S
+    real*8 S_L, S_R
     complex*16, dimension(:), allocatable :: state
     complex*16, dimension(:, :), allocatable :: rho
     complex*16, dimension(:, :), allocatable :: rho_reduced
+    complex*16, dimension(:, :), allocatable :: rho_reduced_L, rho_reduced_R
 
     ! variables to clock algorithm
     real*8 start, finish
@@ -313,11 +360,13 @@ program density_matrix
     ! compute density matrix
     rho = compute_density_matrix(state)
 
-    ! compute reduced density matrix
-    rho_reduced = compute_reduced_density_matrix(rho, N, D, M, debug)
+    ! compute left and right reduced density matrices
+    rho_reduced_L = compute_left_reduced_density_matrix(rho, D, N, M, debug)
+    rho_reduced_R = compute_right_reduced_density_matrix(rho, D, N, M, debug)
 
     ! compute entropy
-    S = compute_entropy(rho_reduced)
+    S_L = compute_entropy(rho_reduced_L, debug)
+    S_R = compute_entropy(rho_reduced_R, debug)
 
     if (debug) then
         ! print state
@@ -325,20 +374,29 @@ program density_matrix
         call print_complex_vector(state)
         print "('Norm = ', f6.4)", get_norm(state)
 
-        ! print density matrix
+        ! print density matrices
         print *, "Density matrix = "
         call print_complex_matrix(rho)
-        print "('Trace = ', f6.4, 1x, sp, f7.4, 'i')", get_trace(rho)
-
-        ! print reduced density matrix
-        print *, "Reduced density matrix = "
-        call print_complex_matrix(rho_reduced)
-        print "('Trace = ', f6.4, 1x, sp, f7.4, 'i')", get_trace(rho_reduced)
-
-        ! print entropy
-        print "('Entropy = ', f6.4)", S
     end if
 
-    deallocate(state, rho, rho_reduced)
+    print "('Trace of density matrix = ', f6.4, 1x, sp, f7.4, 'i')", get_trace(rho)
+
+    if (debug) then
+        ! print reduced density matrices
+        print *, "Left reduced density matrix = "
+        call print_complex_matrix(rho_reduced_L)
+
+        print *, "Right reduced density matrix = "
+        call print_complex_matrix(rho_reduced_R)
+    end if
+
+    print "('Trace of left reduced density matrix = ', f6.4, 1x, sp, f7.4, 'i')", get_trace(rho_reduced_L)
+    print "('Trace of right reduced density matrix = ', f6.4, 1x, sp, f7.4, 'i')", get_trace(rho_reduced_R)
+
+    ! print entropy
+    print "('Entropy of left partition = ', f7.5)", S_L
+    print "('Entropy of right partition = ', f7.5)", S_R
+
+    deallocate(state, rho, rho_reduced_L, rho_reduced_R)
 
 end program

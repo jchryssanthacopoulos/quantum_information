@@ -10,14 +10,16 @@ contains
     ! Returns:
     !   S (real*8): Entropy
     !
-    function compute_entropy(rho) result(S)
+    function compute_entropy(rho, debug) result(S)
         implicit none
 
         integer ii
+        logical debug
 
         ! density matrix
         integer ndim
         complex*16, dimension(:, :) :: rho
+        complex*16, dimension(:, :), allocatable :: rho_copy
 
         ! for computing eigenvalues
         integer lwork, info
@@ -33,23 +35,29 @@ contains
 
         lwork = max(1, 2 * ndim - 1)
 
+        allocate(rho_copy(ndim, ndim))
         allocate(eigvals(ndim))
         allocate(work(max(1, lwork)))
         allocate(rwork(max(1, 3 * ndim - 2)))
 
-        ! compute eigenvalues
-        call zheev("N", "U", ndim, rho, ndim, eigvals, work, lwork, rwork, info)
+        ! make a copy of the density matrix
+        rho_copy = rho
 
-        print *, "Eigenvalues = ", eigvals
+        ! compute eigenvalues
+        call zheev("N", "U", ndim, rho_copy, ndim, eigvals, work, lwork, rwork, info)
+
+        if (debug) then
+            print *, "Eigenvalues of density matrix = ", eigvals
+        end if
 
         S = 0
         do ii = 1, ndim
             if (abs(eigvals(ii)) .gt. nonzero_eigval_threshold) then
-                S = S + eigvals(ii) * log(eigvals(ii))
+                S = S - eigvals(ii) * log(eigvals(ii))
             end if
         end do
 
-        deallocate(eigvals, work, rwork)
+        deallocate(rho_copy, eigvals, work, rwork)
 
     end function
 
