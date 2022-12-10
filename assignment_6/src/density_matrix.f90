@@ -6,7 +6,7 @@
 ! Command-line arguments:
 !   N (integer): Number of subsystems in the quantum state
 !   dim (integer): Number of dimensions of each subsystem
-!   type (character): Type of system to compute (options are "separable" and "generic")
+!   type (character): Type of system to compute (options are "separable", "bell", and "generic")
 !   M (integer): Number of subsystems to trace over to compute left and right reduced density matrices
 !   output_filename (character): Name of file to save density matrices
 !   debug (logical): Whether to print debug information
@@ -19,7 +19,7 @@
 module many_body_quantum_state
 
 contains
-    ! generate a separate wavefunction state with given dimensions
+    ! prepare a separate state with given dimensions
     !
     ! Inputs:
     !   N (integer): Number of subsystems
@@ -27,9 +27,9 @@ contains
     !   debug (logical): Whether to print debug information
     !
     ! Returns:
-    !   state (complex*16 array): Wavefunction vector
+    !   state (complex*16 array): State vector
     !
-    function gen_separable_state(N, D, debug) result(state)
+    function prepare_separable_state(N, D, debug) result(state)
         implicit none
 
         integer N, D, dim
@@ -74,6 +74,25 @@ contains
         end do
 
         deallocate(separable_state, mat_indices)
+
+    end function
+
+    ! prepare a bell state
+    !
+    ! Returns:
+    !   state (complex*16 array): State vector
+    !
+    function prepare_bell_state() result(state)
+        implicit none
+
+        real*8, parameter :: c = 1 / sqrt(2d0)
+        complex*16 state(4)
+
+        ! prepare |psi> = 1/sqrt(2) * (|01> - |10>)
+        state(1) = (0d0, 0d0)
+        state(2) = (c, 0d0)
+        state(3) = -1.0 * (c, 0d0)
+        state(4) = (0d0, 0d0)
 
     end function
 
@@ -286,7 +305,9 @@ program density_matrix
 
     ! prepare state
     if (system_type .eq. "separable") then
-        state = gen_separable_state(N, D, debug)
+        state = prepare_separable_state(N, D, debug)
+    else if (system_type .eq. "bell") then
+        state = prepare_bell_state()
     end if
 
     ! compute density matrix
