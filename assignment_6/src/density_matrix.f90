@@ -59,6 +59,11 @@ contains
             separable_state(ii, :) = separable_state(ii, :) / sqrt(norm)
         end do
 
+        if (debug_level .ge. DEBUG_LEVEL_1) then
+            print *, "Wavefunction factorization = "
+            call print_complex_matrix(separable_state)
+        end if
+
         ! populate tensor
         state = 1
 
