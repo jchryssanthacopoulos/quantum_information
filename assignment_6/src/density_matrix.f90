@@ -19,7 +19,6 @@
 module many_body_quantum_state
 
 contains
-
     ! generate a separate wavefunction state with given dimensions
     !
     ! Inputs:
@@ -260,9 +259,11 @@ end module
 
 program density_matrix
     use arg_parse
+    use entropy
     use many_body_quantum_state
     implicit none
 
+    real*8 S
     complex*16, dimension(:), allocatable :: state
     complex*16, dimension(:, :), allocatable :: rho
     complex*16, dimension(:, :), allocatable :: rho_reduced
@@ -294,6 +295,9 @@ program density_matrix
     ! compute reduced density matrix
     rho_reduced = compute_reduced_density_matrix(rho, N, D, M, debug)
 
+    ! compute entropy
+    S = compute_entropy(rho_reduced)
+
     if (debug) then
         ! print state
         print *, "State = "
@@ -309,6 +313,9 @@ program density_matrix
         print *, "Reduced density matrix = "
         call print_complex_matrix(rho_reduced)
         print "('Trace = ', f6.4, 1x, sp, f7.4, 'i')", get_trace(rho_reduced)
+
+        ! print entropy
+        print "('Entropy = ', f6.4)", S
     end if
 
     deallocate(state, rho, rho_reduced)
