@@ -36,3 +36,37 @@ chmod u+x compile.sh
 ```
 
 ## Execution
+
+The program generates the density matrix for a many-body quantum system and its left and right reduced density matrices.
+To run it,
+type:
+
+```
+compiled/density_matrix [--N <N> --D <D> --type <type> --M <M> --output_filename <output_filename> --debug <debug_level>]
+```
+
+where the command-line arguments are:
+
+1. `N`: Number of subsystems in the quantum state
+2. `dim`: Number of dimensions of each subsystem
+3. `type`: Type of system to compute (options are "separable", "bell", and "generic")
+4. `M`: Number of subsystems in the right system
+5. `output_filename`: Name of file to save density matrices
+6. `debug`: Debug level (options are 0, 1, and 2)
+
+As an example, to compute the density matrices for a 6-body system in 4 dimensions, type:
+
+```
+$ compiled/density_matrix --N 6 --D 4 --M 3 --type generic --output_filename data/density_mat_N6_D4_M3.txt
+ N = 6
+ D = 4
+ type = generic
+ M = 3
+ debug = 0
+ output_filename = data/density_mat_N6_D4_M3.txt                     
+Trace of density matrix = 1.0000 +0.0000i
+Trace of left reduced density matrix = 1.0000 +0.0000i
+Trace of right reduced density matrix = 1.0000 +0.0000i
+Entropy of left partition = 3.67859
+Entropy of right partition = 3.67859
+```
