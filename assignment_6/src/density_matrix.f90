@@ -370,7 +370,6 @@ program density_matrix
     real*8 S_L, S_R
     complex*16, dimension(:), allocatable :: state
     complex*16, dimension(:, :), allocatable :: rho
-    complex*16, dimension(:, :), allocatable :: rho_reduced
     complex*16, dimension(:, :), allocatable :: rho_reduced_L, rho_reduced_R
 
     ! variables to clock algorithm
