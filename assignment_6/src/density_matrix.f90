@@ -440,6 +440,8 @@ program density_matrix
 
     ! write solution to file
     open(1, file=output_filename)
+    write(1, *) "Entropy of left partition = ", S_L
+    write(1, *) "Entropy of right partition = ", S_R
     write(1, *) "Dim density matrix = ", size(rho, 1)
     write(1, *) "Density matrix = "
     do ii = 1, size(rho, 1)
@@ -455,8 +457,6 @@ program density_matrix
     do ii = 1, size(rho_reduced_R, 1)
         write(1, *) rho_reduced_R(ii, :)
     end do
-    write(1, *) "Entropy of left partition = ", S_L
-    write(1, *) "Entropy of right partition = ", S_R
     close(1)
 
     deallocate(state, rho, rho_reduced_L, rho_reduced_R)
