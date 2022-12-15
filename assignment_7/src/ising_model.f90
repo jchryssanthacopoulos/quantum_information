@@ -17,7 +17,7 @@
 module ising_hamiltonian
 
 contains
-    ! Compute the tensor product between two complex matrices
+    ! compute the tensor product between two complex matrices
     !
     ! Inputs:
     !   A (complex*16 matrix): First matrix
@@ -56,7 +56,7 @@ contains
 
     end function
 
-    ! Compute the identity matrix for an N-qubit system
+    ! compute the identity matrix for an N-qubit system
     !
     ! Inputs:
     !   N (integer): Number of qubits
@@ -78,6 +78,76 @@ contains
 
         do ii = 1, dim
             I(ii, ii) = (1d0, 0d0)
+        end do
+
+    end function
+
+    ! compute non-interacting part of Hamiltonian
+    !
+    ! Inputs:
+    !   N (integer): Number of spin sites
+    !
+    ! Returns:
+    !   H_0 (complex*16 matrix): Non-interacting Hamiltonian
+    !
+    function non_interacting_hamiltonian(N) result(H_0)
+        implicit none
+
+        integer N, dim
+        integer ii
+        complex*16 sigma_z(2, 2)
+        complex*16, dimension(:, :), allocatable :: H_0
+        complex*16, dimension(:, :), allocatable :: H_0_i
+
+        sigma_z = (0d0, 0d0)
+        sigma_z(1, 1) = (1d0, 0d0)
+        sigma_z(2, 2) = (-1d0, 0d0)
+
+        dim = size(sigma_z, 1) ** N
+
+        allocate(H_0(dim, dim))
+        allocate(H_0_i(dim, dim))
+
+        H_0 = (0d0, 0d0)
+
+        do ii = 1, N
+            H_0_i = tensor_product(tensor_product(identity(ii - 1), sigma_z), identity(N - ii))
+            H_0 = H_0 + H_0_i
+        end do
+
+    end function
+
+    ! compute interacting part of Hamiltonian
+    !
+    ! Inputs:
+    !   N (integer): Number of spin sites
+    !
+    ! Returns:
+    !   H_int (complex*16 matrix): Interacting Hamiltonian
+    !
+    function interacting_hamiltonian(N) result(H_int)
+        implicit none
+
+        integer N, dim
+        integer ii
+        complex*16 sigma_x(2, 2)
+        complex*16, dimension(:, :), allocatable :: H_int
+        complex*16, dimension(:, :), allocatable :: H_int_i
+
+        sigma_x = (0d0, 0d0)
+        sigma_x(1, 2) = (1d0, 0d0)
+        sigma_x(2, 1) = (1d0, 0d0)
+
+        dim = size(sigma_x, 1) ** N
+
+        allocate(H_int(dim, dim))
+        allocate(H_int_i(dim, dim))
+
+        H_int = (0d0, 0d0)
+
+        do ii = 1, N - 1
+            H_int_i = tensor_product(tensor_product(tensor_product(identity(ii - 1), sigma_x) , sigma_x), identity(N - ii - 1))
+            H_int = H_int + H_int_i
         end do
 
     end function
@@ -106,11 +176,27 @@ program ising_model
     use ising_hamiltonian
     implicit none
 
-    complex*16, dimension(:, :), allocatable :: I
-    complex*16, dimension(:, :), allocatable :: TP
+    integer ndim
 
-    ! Pauli matrices
-    complex*16 sigma_x(2, 2), sigma_z(2, 2)
+    ! Hamiltonian
+    complex*16, dimension(:, :), allocatable :: H
+
+    ! for computing eigenvalues
+    integer lwork, info
+    real*8, dimension(:), allocatable :: eigvals
+    complex*16, dimension(:), allocatable :: work
+    real*8, dimension(:), allocatable :: rwork
+
+    ! variables to clock time to diagonalize
+    real*8 start, finish
+
+    ndim = 2 ** N
+
+    lwork = max(1, 2 * ndim - 1)
+
+    allocate(eigvals(ndim))
+    allocate(work(max(1, lwork)))
+    allocate(rwork(max(1, 3 * ndim - 2)))
 
     ! read number of subsystems and coupling constant
     call parse_cmd_args()
@@ -122,25 +208,23 @@ program ising_model
     print *, "debug = ", adjustl(arg_char)
     print *, "output_filename = ", output_filename
 
-    ! define Pauli matrices
-    sigma_x = (0d0, 0d0)
-    sigma_x(1, 2) = (1d0, 0d0)
-    sigma_x(2, 1) = (1d0, 0d0)
+    ! compute Hamiltonian
+    call cpu_time(start)
+        H = lambda * non_interacting_hamiltonian(N)
+        H = H + interacting_hamiltonian(N)
+    print "('Elapsed time to generate Hamiltonian = ', es16.10)", finish - start
 
-    sigma_z = (0d0, 0d0)
-    sigma_z(1, 1) = (1d0, 0d0)
-    sigma_z(2, 2) = (-1d0, 0d0)
+    if (debug) then
+        print *, "H is "
+        call print_complex_matrix(H)
+    end if
 
-    ! compute tensor product
-    I = identity(1)
-    TP = tensor_product(I, sigma_x)
-    print *, "Tensor product between I and sigma_x is "
-    call print_complex_matrix(TP)
+    ! compute eigenvalues
+    call cpu_time(start)
+        call zheev("N", "U", ndim, H, ndim, eigvals, work, lwork, rwork, info)
+    call cpu_time(finish)
+    print "('Elapsed time to diagonalize = ', es16.10)", finish - start
 
-    TP = tensor_product(I, sigma_z)
-    print *, "Tensor product between I and sigma_z is "
-    call print_complex_matrix(TP)
-
-    deallocate(I, TP)
+    deallocate(H, eigvals, work, rwork)
 
 end program

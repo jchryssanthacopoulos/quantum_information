@@ -61,12 +61,8 @@ contains
                         ii = ii + 1
                     end if
 
-                case ("--debug")
-                    if (ii < num_args) then
-                        call get_command_argument(ii + 1, arg)
-                        read(arg, *) debug
-                        ii = ii + 1
-                    end if
+                case ("-d", "--debug")
+                    debug = .true.
 
             end select
 

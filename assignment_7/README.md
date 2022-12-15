@@ -1,4 +1,4 @@
-# Assignment 6
+# Assignment 7
 
 The assignment instructions are contained in `Assignment7.pdf`.
 
