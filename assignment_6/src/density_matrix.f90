@@ -372,10 +372,7 @@ program density_matrix
     complex*16, dimension(:, :), allocatable :: rho
     complex*16, dimension(:, :), allocatable :: rho_reduced_L, rho_reduced_R
 
-    ! variables to clock algorithm
-    real*8 start, finish
-
-    ! read x boundaries and number of discretization points
+    ! read dimensions of problem
     call parse_cmd_args()
     write (arg_char, "(i8)") N
     print *, "N = ", adjustl(arg_char)
