@@ -9,8 +9,8 @@
 !   lambda (real): Coupling between neighboring sites
 !   max_iter (integer): Maximum number of iterations to run
 !   thres (real): Threshold for convergence in terms of successive differences in normalized ground state energy
-!   output_filename (character): Name of file to save solution
-!   debug (integer): Whether to display debug information
+!   diag_method (character): Method to use to diagonalize (i.e., dsyevr or zheev)
+!   debug (logical): Whether to display debug information
 !
 ! Returns:
 !   Saves the energy and associated metadata to the specified file
@@ -19,6 +19,7 @@
 
 module real_space_rg
     use ising_hamiltonian
+    use lin_alg_utils
 
 contains
     ! Run an iteration of real-space renormalization group starting from subsystem and interaction Hamiltonians
@@ -29,25 +30,24 @@ contains
     !   A (complex*16 matrix): Part of interaction Hamiltonian corresponding to left bipartition
     !   B (complex*16 matrix): Part of interaction Hamiltonian corresponding to right bipartition
     !   eigenvalues (real*8 array): Array to store energy eigenvalues
+    !   diag_method (character): Method to use to diagonalize (i.e., dsyevr or zheev)
+    !   debug (logical): Whether to display debug information
     !
     ! Returns:
     !   Updates H_N, A, and B in-place
     !
-    subroutine iter_real_space_rg(N, H_N, A, B, eigenvalues, debug)
+    subroutine iter_real_space_rg(N, H_N, A, B, eigenvalues, diag_method, debug)
         implicit none
 
-        integer N
-        integer ndim
-        integer ii
+        integer N, ndim, ii
         logical debug
+        character(len=*) diag_method
 
         complex*16, dimension(:, :) :: H_N, A, B
+        complex*16, dimension(:, :), allocatable :: H_2N, A_2N, B_2N
         real*8, dimension(:), allocatable :: eigenvalues
 
-        complex*16, dimension(:, :), allocatable :: H_2N, A_2N, B_2N
         real*8, dimension(:, :), allocatable :: P, P_transpose
-
-        ! full set of eigenvectors computed using zheev
         complex*16, dimension(:, :), allocatable :: full_P, full_P_trunc, full_P_trunc_transpose
 
         ndim = 2 ** N
@@ -57,12 +57,13 @@ contains
         allocate(B_2N(ndim ** 2, ndim ** 2))
         allocate(P(ndim ** 2, ndim))
         allocate(P_transpose(ndim, ndim ** 2))
-
         allocate(full_P(ndim ** 2, ndim ** 2))
         allocate(full_P_trunc(ndim ** 2, ndim))
         allocate(full_P_trunc_transpose(ndim, ndim ** 2))
 
         H_2N = tensor_product(H_N, identity(N)) + tensor_product(identity(N), H_N) + tensor_product(A, B)
+        A_2N = tensor_product(A, identity(N))
+        B_2N = tensor_product(identity(N), B)
 
         if (debug) then
             print *, "H_N = "
@@ -75,39 +76,40 @@ contains
             call print_complex_matrix(H_2N)
         end if
 
-        ! compute first ndim eigenvalues and eigenvectors
-        call find_k_eigenvalues(H_2N, ndim, eigenvalues, P)
+        if (diag_method .eq. "dsyevr") then
+            ! compute first ndim eigenvalues and eigenvectors
+            call find_k_eigenvalues(H_2N, ndim, eigenvalues, P)
 
-        ! compute using zheev
-        call find_eigenvalues_using_zheev(H_2N, eigenvalues, full_P)
+            if (debug) then
+                print *, "P = "
+                call print_matrix(P, ndim ** 2, ndim)
+            end if
 
-        ! truncate
-        do ii = 1, ndim
-            full_P_trunc(:, ii) = full_P(:, ii)
-        end do
+            P_transpose = transpose(P)
 
-        if (debug) then
-            print *, "P = "
-            call print_matrix(P, ndim ** 2, ndim)
+            H_N = matmul(matmul(P_transpose, H_2N), P)
+            A = matmul(matmul(P_transpose, A_2N), P)
+            B = matmul(matmul(P_transpose, B_2N), P)
+        else
+            ! compute using zheev
+            call find_eigenvalues_using_zheev(H_2N, eigenvalues, full_P)
 
-            print *, "P trunc = "
-            call print_complex_matrix(full_P_trunc)
+            ! truncate
+            do ii = 1, ndim
+                full_P_trunc(:, ii) = full_P(:, ii)
+            end do
+
+            if (debug) then
+                print *, "P = "
+                call print_complex_matrix(full_P_trunc)
+            end if
+
+            full_P_trunc_transpose = transpose(conjg(full_P_trunc))
+
+            H_N = matmul(matmul(full_P_trunc_transpose, H_2N), full_P_trunc)
+            A = matmul(matmul(full_P_trunc_transpose, A_2N), full_P_trunc)
+            B = matmul(matmul(full_P_trunc_transpose, B_2N), full_P_trunc)
         end if
-
-        P_transpose = transpose(P)
-        full_P_trunc_transpose = transpose(conjg(full_P_trunc))
-
-        ! project Hamiltonian into lower-dimensional subspace
-        H_N = matmul(matmul(full_P_trunc_transpose, H_2N), full_P_trunc)
-        ! H_N = matmul(matmul(P_transpose, H_2N), P)
-
-        ! project A and B
-        A_2N = tensor_product(A, identity(N))
-        B_2N = tensor_product(identity(N), B)
-        A = matmul(matmul(full_P_trunc_transpose, A_2N), full_P_trunc)
-        B = matmul(matmul(full_P_trunc_transpose, B_2N), full_P_trunc)
-        ! A = matmul(matmul(P_transpose, A_2N), P)
-        ! B = matmul(matmul(P_transpose, B_2N), P)
 
         if (debug) then
             print *, "H_N after iteration = "
@@ -120,114 +122,6 @@ contains
 
         deallocate(H_2N, A_2N, B_2N, P, P_transpose, full_P, full_P_trunc, full_P_trunc_transpose)
 
-    end subroutine
-
-    ! Compute first num_eig number of eigenvalues and eigenvectors
-    !
-    ! Inputs:
-    !   A (complex*16 matrix): Matrix to diagonalize
-    !   num_eig (integer): Number of eigenvalues to compute
-    !   eigenvalues (real*8 array): Array to store eigenvalues
-    !   eigenvectors (real*8 matrix): Matrix to store eigenvectors
-    !
-    subroutine find_k_eigenvalues(A, num_eig, eigenvalues, eigenvectors)
-        implicit none
-
-        complex*16, dimension(:, :), allocatable, intent(in) :: A
-        real*8, dimension(:), allocatable, intent(inout) :: eigenvalues
-        real*8, dimension(:, :), allocatable, intent(inout) :: eigenvectors
-
-        integer N
-        integer num_eig
-
-        integer lwork, liwork, info, M, lwmax
-        real*8, dimension(:), allocatable :: work
-        integer, dimension(:), allocatable :: isuppz, iwork
-        real*8, dimension(:, :), allocatable :: supp
-
-        N = size(A, 1)
-
-        lwmax = 100000
-
-        allocate(work(lwmax))
-        allocate(iwork(lwmax))
-        allocate(isuppz(2 * num_eig))
-        allocate(supp(N, N))
-
-        supp = real(A)
-
-        ! compute optimal size of workspace
-        lwork = -1
-        liwork = -1
-        call dsyevr('V', 'I', 'U', N, supp, N, 0.0, 0.0, 1, num_eig, &
-            0.0, M, eigenvalues, eigenvectors, N, isuppz, &
-            work, lwork, iwork, liwork, info)
-
-        lwork = min(lwmax, int(work(1)))
-        liwork = min(lwmax, int(iwork(1)))
-
-        call dsyevr('V', 'I', 'U', N, supp, N, 0.0, 0.0, 1, num_eig, &
-            0.0, M, eigenvalues, eigenvectors, N, isuppz, &
-            work, lwork, iwork, liwork, info)
-
-        if (info .ne. 0) then
-            print *, 'Failed to diagonalize'
-            stop
-        end if
-
-        deallocate(work, iwork, isuppz, supp)
-
-    end subroutine
-
-    ! Compute all eigenvalues and eigenvectors of matrix
-    !
-    ! Inputs:
-    !   A (complex*16 matrix): Matrix to diagonalize
-    !   eigenvalues (real*8 array): Array to store eigenvalues
-    !   eigenvectors (real*8 matrix): Matrix to store eigenvectors
-    !
-    subroutine find_eigenvalues_using_zheev(A, eigenvalues, eigenvectors)
-        implicit none
-
-        integer ndim, lwork, info
-        complex*16, dimension(:, :) :: A
-        real*8, dimension(:) :: eigenvalues
-        complex*16, dimension(:, :) :: eigenvectors
-
-        complex*16, dimension(:), allocatable :: work
-        real*8, dimension(:), allocatable :: rwork
-
-        ndim = size(A, 1)
-
-        lwork = max(1, 2 * ndim - 1)
-
-        allocate(work(max(1, lwork)))
-        allocate(rwork(max(1, 3 * ndim - 2)))
-
-        eigenvectors = A
-
-        call zheev("V", "U", ndim, eigenvectors, ndim, eigenvalues, work, lwork, rwork, info)
-
-        deallocate(work, rwork)
-
-    end subroutine
-
-    ! Print matrix in a nice format
-    !
-    ! Inputs:
-    !   M (real*8 matrix): Matrix to print
-    !   nrows (integer): Number of rows
-    !   ncols (integer): Number of columns
-    !
-    subroutine print_matrix(M, nrows, ncols)
-        implicit none
-
-        integer*4 ii, nrows, ncols
-        real*8 M(nrows, ncols)
-
-        do ii = 1, nrows
-            print '(20f7.2)', M(ii, 1:ncols)
-        end do
     end subroutine
 
 end module
@@ -262,9 +156,9 @@ program rsrg_ising
     print *, "lambda = ", adjustl(arg_char)
     write (arg_char, "(e8.3)") thres
     print *, "thres = ", adjustl(arg_char)
+    print *, "diag method = ", diag_method
     write (arg_char, "(l1)") debug
     print *, "debug = ", adjustl(arg_char)
-    print *, "output_filename = ", output_filename
 
     ndim = 2 ** N
 
@@ -289,7 +183,7 @@ program rsrg_ising
         A = 1 / sqrt(2.) * A
         B = 1 / sqrt(2.) * B
 
-        call iter_real_space_rg(N, H, A, B, eigenvalues, debug)
+        call iter_real_space_rg(N, H, A, B, eigenvalues, diag_method, debug)
 
         ! compute energy density
         gs_energy = eigenvalues(1) / dble(N)

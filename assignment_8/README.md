@@ -41,7 +41,7 @@ The program computes the ground state energy of the 1D Ising model using the rea
 To run it, type:
 
 ```
-compiled/rsrg_ising [--N <N> --max_iter <max_iter> --lambda <lambda> --thres <thres> --output_filename <output_filename> -d/--debug]
+compiled/rsrg_ising [--N <N> --max_iter <max_iter> --lambda <lambda> --thres <thres> --diag_method <diag_method> -d/--debug]
 ```
 
 where the command-line arguments are:
@@ -50,5 +50,5 @@ where the command-line arguments are:
 2. `max_iter`: Maximum number of iterations to run
 3. `lambda`: Coupling between neighboring sites
 4. `thres`: Threshold for convergence in terms of successive differences in normalized ground state energy
-5. `output_filename`: Name of file to save solution
+5. `diag_method`: Method to use to diagonalize (i.e., dsyevr or zheev)
 6. `debug`: Whether to display debug information

@@ -8,7 +8,7 @@ module arg_parse
     integer max_iter
     real*8 lambda
     real*8 thres
-    character(len=50) output_filename
+    character(len=50) diag_method
     logical debug
 
     ! default parameters
@@ -16,7 +16,7 @@ module arg_parse
     integer, parameter :: max_iter_default = 50
     real*8, parameter :: lambda_default = 1.0
     real*8, parameter :: thres_default = 1d-10
-    character(len=50), parameter :: output_filename_default = "rsrg_ising.txt"
+    character(len=50), parameter :: diag_method_default = "zheev"
     logical, parameter :: debug_default = .false.
 
     ! for displaying command-line arguments
@@ -35,7 +35,7 @@ contains
         max_iter = max_iter_default
         lambda = lambda_default
         thres = thres_default
-        output_filename = output_filename_default
+        diag_method = diag_method_default
         debug = debug_default
 
         num_args = command_argument_count()
@@ -74,10 +74,10 @@ contains
                         ii = ii + 1
                     end if
 
-                case ("--output_filename")
+                case ("--diag_method")
                     if (ii < num_args) then
                         call get_command_argument(ii + 1, arg)
-                        read(arg, "(A)") output_filename
+                        read(arg, "(A)") diag_method
                         ii = ii + 1
                     end if
 

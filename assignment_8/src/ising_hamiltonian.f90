@@ -87,9 +87,7 @@ contains
 
         complex*16, dimension(:, :), allocatable :: I1, I2, prod1
 
-        sigma_z = (0d0, 0d0)
-        sigma_z(1, 1) = (1d0, 0d0)
-        sigma_z(2, 2) = (-1d0, 0d0)
+        sigma_z = get_sigma_z()
 
         dim = size(sigma_z, 1) ** N
 
@@ -128,9 +126,7 @@ contains
 
         complex*16, dimension(:, :), allocatable :: I1, I2, prod1, prod2
 
-        sigma_x = (0d0, 0d0)
-        sigma_x(1, 2) = (1d0, 0d0)
-        sigma_x(2, 1) = (1d0, 0d0)
+        sigma_x = get_sigma_x()
 
         dim = size(sigma_x, 1) ** N
 
@@ -152,13 +148,30 @@ contains
 
     end function
 
+    ! return sigma_x Pauli matrix
+    !
+    ! Returns:
+    !   sigma_x (complex*16 matrix): x Pauli matrix
+    !
     function get_sigma_x() result(sigma_x)
         complex*16 sigma_x(2, 2)
 
         sigma_x = (0d0, 0d0)
         sigma_x(1, 2) = (1d0, 0d0)
         sigma_x(2, 1) = (1d0, 0d0)
+    end function
 
+    ! return sigma_z Pauli matrix
+    !
+    ! Returns:
+    !   sigma_z (complex*16 matrix): z Pauli matrix
+    !
+    function get_sigma_z() result(sigma_z)
+        complex*16 sigma_z(2, 2)
+
+        sigma_z = (0d0, 0d0)
+        sigma_z(1, 1) = (1d0, 0d0)
+        sigma_z(2, 2) = (-1d0, 0d0)
     end function
 
     ! print square complex matrix in a nice format
@@ -174,6 +187,24 @@ contains
 
         do ii = 1, size(M, 1)
             print '(*(sp, f8.5, 1x, f8.5, "i", 3x))', M(ii, :)
+        end do
+    end subroutine
+
+    ! print matrix in a nice format
+    !
+    ! Inputs:
+    !   M (real*8 matrix): Matrix to print
+    !   nrows (integer): Number of rows
+    !   ncols (integer): Number of columns
+    !
+    subroutine print_matrix(M, nrows, ncols)
+        implicit none
+
+        integer*4 ii, nrows, ncols
+        real*8 M(nrows, ncols)
+
+        do ii = 1, nrows
+            print '(20f7.2)', M(ii, 1:ncols)
         end do
     end subroutine
 
