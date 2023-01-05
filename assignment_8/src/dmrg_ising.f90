@@ -155,9 +155,8 @@ contains
 
         ! project into lower-dimensional subspace
         H_1 = matmul(matmul(P_transpose, H_enlarged_1), P)
-        A = matmul(matmul(P_transpose, tensor_product(identity(1), A)), P)
-        A = B
-        ! B = matmul(matmul(P_transpose, tensor_product(B, identity(1))), P)
+        A = matmul(matmul(P_transpose, tensor_product(A, identity(1))), P)
+        B = A
 
         if (debug) then
             print *, "H_1 after iteration = "
