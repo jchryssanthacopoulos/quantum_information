@@ -37,7 +37,7 @@ contains
     ! Returns:
     !   Updates H_1, H_12, and H_34 in-place
     !
-    subroutine iter_density_matrix_rg(N, H_1, H_12, H_34, eigenvalues, diag_method, debug)
+    subroutine iter_density_matrix_rg(N, H_1, A, B, eigenvalues, diag_method, debug)
         implicit none
 
         integer N, m, d, ndim, ii
@@ -47,8 +47,8 @@ contains
         ! Pauli matrices
         complex*16 sigma_x(2, 2), sigma_z(2, 2)
 
-        complex*16, dimension(:, :) :: H_1, H_12, H_34
-        complex*16, dimension(:, :), allocatable :: H_1_md, H_12_md, H_34_md
+        complex*16, dimension(:, :) :: H_1, A, B
+        complex*16, dimension(:, :), allocatable :: H_enlarged, H_12, H_23
         complex*16, dimension(:, :), allocatable :: H
 
         ! eigenvalues and eigenvectors of H and rho
@@ -69,31 +69,34 @@ contains
         sigma_z = get_sigma_z()
 
         allocate(H(ndim ** 2, ndim ** 2))
-        allocate(H_1_md(ndim, ndim), H_12_md(ndim, ndim), H_34_md(ndim, ndim))
+        allocate(H_enlarged(ndim, ndim))
+        allocate(H_12(ndim, ndim))
+        allocate(H_23(ndim ** 2, ndim ** 2))
+
         allocate(eigenvalues_rho(ndim))
         allocate(eigenvectors(ndim ** 2, ndim ** 2), eigenvectors_rho(ndim, ndim))
+
         allocate(rho(ndim ** 2, ndim ** 2), rho_reduced_L(ndim, ndim))
         allocate(P(ndim, m), P_transpose(m, ndim))
 
-        ! Hamiltonian from left-most and right-most blocks (H_1, H_4)
-        H = tensor_product(H_1, identity(N + 2)) + tensor_product(identity(N + 2), H_1)
+        ! enlarge the block
+        H_12 = tensor_product(A, sigma_x)
+        H_enlarged = tensor_product(H_1, identity(1)) + tensor_product(identity(N), sigma_z) + H_12
 
-        ! add Hamiltonian of additional sites
-        H = H + tensor_product(tensor_product(identity(N), sigma_z), identity(N + 1))  ! H_2
-        H = H + tensor_product(tensor_product(identity(N + 1), sigma_z), identity(N))  ! H_3
-        H = H + tensor_product(tensor_product(identity(N), sigma_x), tensor_product(sigma_x, identity(N)))  ! H_23
+        ! interaction (always the same?)
+        H_23 = tensor_product(tensor_product(identity(N), sigma_x), tensor_product(sigma_x, identity(N)))
 
-        ! add interaction between left-most and right-most blocks, and corresponding extra sites
-        H = H + tensor_product(tensor_product(H_12, sigma_x), identity(N + 1))
-        H = H + tensor_product(identity(N + 1), tensor_product(sigma_x, H_34))
+        ! Hamiltonian of left and right enlarged blocks
+        H = tensor_product(H_enlarged, identity(N + 1)) + tensor_product(identity(N + 1), H_enlarged)
+        H = H + H_23
 
         if (debug) then
             print *, "H_1 = "
             call print_complex_matrix(H_1)
             print *, "H_12 = "
             call print_complex_matrix(H_12)
-            print *, "H_34 = "
-            call print_complex_matrix(H_34)
+            print *, "H_23 = "
+            call print_complex_matrix(H_23)
             print *, "H = "
             call print_complex_matrix(H)
         end if
@@ -123,24 +126,17 @@ contains
         P_transpose = transpose(conjg(P))
 
         ! project into lower-dimensional subspace
-        H_12_md = tensor_product(H_12, sigma_x)
-        H_34_md = tensor_product(sigma_x, H_34)
-        H_1_md = tensor_product(H_1, identity(1)) + tensor_product(identity(N), sigma_z) + H_12_md
-
-        H_1 = matmul(matmul(P_transpose, H_1_md), P)
-        H_12 = matmul(matmul(P_transpose, H_12_md), P)
-        H_34 = matmul(matmul(P_transpose, H_34_md), P)
+        H_1 = matmul(matmul(P_transpose, H_enlarged), P)
+        A = matmul(matmul(P_transpose, tensor_product(identity(1), A)), P)
 
         if (debug) then
             print *, "H_1 after iteration = "
             call print_complex_matrix(H_1)
-            print *, "H_12 after iteration = "
-            call print_complex_matrix(H_12)
-            print *, "H_34 after iteration = "
-            call print_complex_matrix(H_34)
+            print *, "A after iteration = "
+            call print_complex_matrix(A)
         end if
 
-        deallocate(H, H_1_md, H_12_md, H_34_md, eigenvalues_rho, eigenvectors, eigenvectors_rho, rho, rho_reduced_L, P, P_transpose)
+        deallocate(H, H_enlarged, H_12, H_23, eigenvalues_rho, eigenvectors, eigenvectors_rho, rho, rho_reduced_L, P, P_transpose)
 
     end subroutine
 
@@ -152,7 +148,7 @@ program dmrg_ising
     use density_matrix_rg
     implicit none
 
-    integer d, iter
+    integer d, iter, npart
 
     ! Pauli matrices
     complex*16 sigma_x(2, 2)
@@ -161,7 +157,7 @@ program dmrg_ising
     real*8 gs_energy, prev_gs_energy
 
     ! matrices needed to compute Hamiltonian
-    complex*16, dimension(:, :), allocatable :: H_1, H_12, H_34
+    complex*16, dimension(:, :), allocatable :: H_1, A, B
 
     ! to store energy eigenvalues and eigenvectors
     real*8, dimension(:), allocatable :: eigenvalues, eigenvalues_H
@@ -192,37 +188,43 @@ program dmrg_ising
 
     ! compute operators in interaction Hamiltonian
     sigma_x = get_sigma_x()
-    H_12 = tensor_product(identity(N - 1), sigma_x)
-    H_34 = tensor_product(sigma_x, identity(N - 1))
+    A = tensor_product(identity(N - 1), sigma_x)
+    B = tensor_product(sigma_x, identity(N - 1))
 
     iter = 1
     gs_energy = -1
     prev_gs_energy = 0
 
+    npart = N
+
     do while ((iter .le. max_iter) .and. abs(gs_energy - prev_gs_energy) > thres)
         prev_gs_energy = gs_energy
 
-        call iter_density_matrix_rg(N, H_1, H_12, H_34, eigenvalues, diag_method, debug)
+        call iter_density_matrix_rg(N, H_1, A, B, eigenvalues, diag_method, debug)
+
+        npart = npart * 2
 
         ! compute energy density
-        gs_energy = eigenvalues(1) / dble(N)
+        ! gs_energy = eigenvalues(1) / dble(N)
         ! gs_energy = eigenvalues(1) / dble(2 * (N + 1 + iter))
+        gs_energy = eigenvalues(1) / dble(npart)
 
         if (debug) then
             print "('Iteration = ', i3, ', ground state energy = ', f9.4)", iter, gs_energy
         end if
 
         iter = iter + 1
+        npart = npart * 2
     end do
 
     ! perform final diagonalization to get energy of actual system
-    call find_eigenvalues_using_zheev(H_1, eigenvalues_H, eigenvectors_H)
+    ! call find_eigenvalues_using_zheev(H_1, eigenvalues_H, eigenvectors_H)
+    ! print "('Ground state energy = ', f9.4)", eigenvalues_H(1) / dble(N)
 
-    print "('Ground state energy = ', f9.4)", eigenvalues_H(1) / dble(N)
-    ! print "('Ground state energy = ', f9.4)", gs_energy
+    print "('Ground state energy = ', f9.4)", gs_energy
     print "('Max iterations run = ', i3)", iter - 1
     print "('Did converge = ', l1)", abs(gs_energy - prev_gs_energy) <= thres
 
-    deallocate(H_1, H_12, H_34, eigenvalues, eigenvalues_H, eigenvectors_H)
+    deallocate(H_1, A, B, eigenvalues, eigenvalues_H, eigenvectors_H)
 
 end program
