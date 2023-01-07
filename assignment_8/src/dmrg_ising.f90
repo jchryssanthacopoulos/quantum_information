@@ -31,18 +31,16 @@ contains
     !   A (complex*16 matrix): Part of interaction Hamiltonian corresponding to left bipartition
     !   lambda (real*8): Interaction with external magnetic field
     !   eigenvalues (real*8 array): Array to store energy eigenvalues
-    !   diag_method (character): Method to use to diagonalize (i.e., dsyevr or zheev)
     !   debug (logical): Whether to display debug information
     !
     ! Returns:
     !   Updates H_1, A, and B in-place
     !
-    subroutine iter_density_matrix_rg(N, H_1, A, lambda, eigenvalues, diag_method, debug)
+    subroutine iter_density_matrix_rg(N, H_1, A, lambda, eigenvalues, debug)
         implicit none
 
         integer N, m, d, ndim, ii
         logical debug
-        character(len=*) diag_method
 
         real*8 lambda
 
@@ -196,7 +194,6 @@ program dmrg_ising
     print *, "lambda = ", adjustl(arg_char)
     write (arg_char, "(e8.3)") thres
     print *, "thres = ", adjustl(arg_char)
-    print *, "diag method = ", diag_method
     write (arg_char, "(l1)") debug
     print *, "debug = ", adjustl(arg_char)
 
@@ -220,7 +217,7 @@ program dmrg_ising
     do while ((iter .le. max_iter) .and. abs(gs_energy - prev_gs_energy) > thres)
         prev_gs_energy = gs_energy
 
-        call iter_density_matrix_rg(N, H_1, A, lambda, eigenvalues, diag_method, debug)
+        call iter_density_matrix_rg(N, H_1, A, lambda, eigenvalues, debug)
 
         ! compute energy density
         gs_energy = eigenvalues(1) / dble(d * (N - 1 + iter))
