@@ -9,11 +9,10 @@
 !   lambda (real): Coupling between neighboring sites
 !   max_iter (integer): Maximum number of iterations to run
 !   thres (real): Threshold for convergence in terms of successive differences in normalized ground state energy
-!   diag_method (character): Method to use to diagonalize (i.e., dsyevr or zheev)
 !   debug (logical): Whether to display debug information
 !
 ! Returns:
-!   Saves the energy and associated metadata to the specified file
+!   Print the ground state energy, number of iterations run, and whether algorithm converged to standard out
 !
 
 
@@ -34,7 +33,7 @@ contains
     !   debug (logical): Whether to display debug information
     !
     ! Returns:
-    !   Updates H_1, A, and B in-place
+    !   Updates H_1 and A in-place
     !
     subroutine iter_density_matrix_rg(N, H_1, A, lambda, eigenvalues, debug)
         implicit none
@@ -48,7 +47,7 @@ contains
         complex*16 sigma_x(2, 2), sigma_z(2, 2)
 
         complex*16, dimension(:, :) :: H_1, A
-        complex*16, dimension(:, :), allocatable :: H_enlarged_1, H_12, H_34, H_23
+        complex*16, dimension(:, :), allocatable :: H_enlarged_1, H_12, H_23
         complex*16, dimension(:, :), allocatable :: H
 
         ! eigenvalues and eigenvectors of H and rho
@@ -71,7 +70,6 @@ contains
         allocate(H(ndim ** 2, ndim ** 2))
         allocate(H_enlarged_1(ndim, ndim))
         allocate(H_12(ndim, ndim))
-        allocate(H_34(ndim, ndim))
         allocate(H_23(ndim ** 2, ndim ** 2))
 
         allocate(eigenvalues_rho(ndim))
@@ -156,7 +154,7 @@ contains
             call print_complex_matrix(A)
         end if
 
-        deallocate(H, H_enlarged_1, H_12, H_34, H_23)
+        deallocate(H, H_enlarged_1, H_12, H_23)
         deallocate(eigenvalues_rho, eigenvectors, eigenvectors_rho, rho, rho_reduced_L, P, P_transpose)
 
     end subroutine

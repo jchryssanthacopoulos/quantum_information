@@ -52,3 +52,11 @@ where the command-line arguments are:
 4. `thres`: Threshold for convergence in terms of successive differences in normalized ground state energy
 5. `diag_method`: Method to use to diagonalize (i.e., dsyevr or zheev)
 6. `debug`: Whether to display debug information
+
+To run the density matrix renornalization group algorithm, run:
+
+```
+compiled/dmrg_ising [--N <N> --max_iter <max_iter> --lambda <lambda> --thres <thres> -d/--debug]
+```
+
+where the command-line arguments are interpreted similarly.
