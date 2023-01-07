@@ -13,7 +13,7 @@
 !   debug (logical): Whether to display debug information
 !
 ! Returns:
-!   Saves the energy and associated metadata to the specified file
+!   Print the ground state energy, number of iterations run, and whether algorithm converged to standard out
 !
 
 
