@@ -233,7 +233,7 @@ program dmrg_ising
     end do
 
     print "('Ground state energy = ', f9.4)", gs_energy
-    print "('Max iterations run = ', i3)", iter - 1
+    print "('Max iterations run = ', i4)", iter - 1
     print "('Did converge = ', l1)", abs(gs_energy - prev_gs_energy) <= thres
 
     deallocate(H_1, A, eigenvalues, eigenvalues_H, eigenvectors_H)
