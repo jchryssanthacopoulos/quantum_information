@@ -15,4 +15,14 @@ pip install -e .
 
 ## Execution
 
-![image](notebooks/apply_gate_step.png)
+The time evolution step is given by the following tensor network:
+
+![image](figures/apply_gate_step.png)
+
+This contracted tensor network represents the local density matrix:
+
+![image](figures/local_density_matrix.png)
+
+The average energy of two sites is:
+
+![image](figures/average_energy.png)
