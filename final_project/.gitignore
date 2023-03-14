@@ -1,4 +1,5 @@
 env
 .ipynb_checkpoints
+*.egg-info
 *.txt
 !requirements.txt
