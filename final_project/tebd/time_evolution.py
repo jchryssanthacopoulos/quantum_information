@@ -17,19 +17,18 @@ def apply_gate_MPS(gateAB, A, sAB, B, sBA, chi, stol=1e-7):
     d = A.shape[1]
     chiBA = sBA_trim.shape[0]
     nshape = [d * chiBA, d * chiBA]
-    
+
     sBA_1_tensor = qtn.Tensor(np.diag(sBA), inds=('f0', 'k1'), tags=['sBA', '1'])
     A_tensor = qtn.Tensor(A, inds=('k1', 'k2', 'k3'), tags=['A'])
     sAB_tensor = qtn.Tensor(np.diag(sAB), inds=('k3', 'k4'), tags=['sAB'])
     B_tensor = qtn.Tensor(B, inds=('k4', 'k5', 'k6'), tags=['B'])
     sBA_2_tensor = qtn.Tensor(np.diag(sBA), inds=('k6', 'f3'), tags=['sBA', '2'])
     gate_AB_tensor = qtn.Tensor(gateAB, inds=('f1', 'f2', 'k2', 'k5'), tags=['gateAB'])
-    
+
     TN = sBA_1_tensor & gate_AB_tensor & A_tensor & sAB_tensor & B_tensor & sBA_2_tensor
     TNc = TN ^ ...
-    x = TNc.data
-    
-    utemp, stemp, vhtemp = LA.svd(x.reshape(nshape), full_matrices=False)
+
+    utemp, stemp, vhtemp = LA.svd(TNc.data.reshape(nshape), full_matrices=False)
 
     # truncate to reduced dimension
     chitemp = min(chi, len(stemp))

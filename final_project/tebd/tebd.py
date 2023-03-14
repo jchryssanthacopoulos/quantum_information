@@ -3,10 +3,10 @@
 from typing import Optional
 
 import numpy as np
-import quimb.tensor as qtn
 from scipy.linalg import expm
 
 from tebd.density_matrix import local_density_MPS
+from tebd.observables import compute_energy
 from tebd.time_evolution import apply_gate_MPS
 
 
@@ -57,10 +57,6 @@ def run_tebd(
         gateAB = expm(-tau * hamAB.reshape(d**2, d**2)).reshape(d, d, d, d)
         gateBA = expm(-tau * hamBA.reshape(d**2, d**2)).reshape(d, d, d, d)
 
-    # initialize environment matrices
-    sigBA = np.eye(A.shape[0]) / A.shape[0]
-    muAB = np.eye(A.shape[2]) / A.shape[2]
-
     for k in range(numiter + 1):
         if np.mod(k, midsteps) == 0 or (k == numiter):
             """ Compute energy and display """
@@ -68,21 +64,11 @@ def run_tebd(
             # compute 2-site local reduced density matrices
             rhoAB, rhoBA = local_density_MPS(A, sAB, B, sBA)
 
-            # evaluate the energy
-            hamAB_tensor = qtn.Tensor(hamAB, inds=('k1', 'k2', 'k3', 'k4'), tags=['hamAB'])
-            rhoAB_tensor = qtn.Tensor(rhoAB, inds=('k1', 'k2', 'k3', 'k4'), tags=['rhoAB'])
-            energyAB_tensor = hamAB_tensor & rhoAB_tensor
-            energyAB = energyAB_tensor ^ ...
-            
-            hamBA_tensor = qtn.Tensor(hamBA, inds=('k1', 'k2', 'k3', 'k4'), tags=['hamBA'])
-            rhoBA_tensor = qtn.Tensor(rhoBA, inds=('k1', 'k2', 'k3', 'k4'), tags=['rhoBA'])
-            energyBA_tensor = hamBA_tensor & rhoBA_tensor
-            energyBA = energyBA_tensor ^ ...
-            
-            energy = 0.5 * (energyAB + energyBA)
+            energy = compute_energy(hamAB, rhoAB, hamBA, rhoBA)
 
             chitemp = min(A.shape[0], B.shape[0])
             enDiff = energy - E0
+
             print('iteration: %d of %d, chi: %d, t-step: %f, energy: %f, '
                 'energy error: %e' % (k, numiter, chitemp, tau, energy, enDiff))
 
