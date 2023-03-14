@@ -12,3 +12,7 @@ python -m venv env
 source env/bin/activate
 pip install -e .
 ```
+
+## Execution
+
+![image](notebooks/apply_gate_step.png)

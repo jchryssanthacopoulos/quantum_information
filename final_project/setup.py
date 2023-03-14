@@ -12,6 +12,9 @@ setup(
     install_requires=[
         "autoray==0.6.1",
         "jupyter==1.0.0",
+        "matplotlib==3.7.1",
+        "ncon==2.0.0",
+        "networkx==3.0",
         "numpy==1.23.5",
         "opt-einsum==3.3.0",
         "quimb==1.4.2",
