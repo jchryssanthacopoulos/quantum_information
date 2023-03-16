@@ -1,7 +1,5 @@
 """Run TEBD algorithm given various parameters."""
 
-from typing import Tuple
-
 import numpy as np
 from numpy import linalg as LA
 import quimb.tensor as qtn
@@ -62,8 +60,7 @@ class TEBD:
 
         for i in range(1, self.N - 2):
             two_site_gate = self._gen_gate(self.local_H.hamiltonians[i], tau)
-
-            A, B, sAB = self._apply_gate(
+            sAB = self._apply_gate(
                 two_site_gate,
                 self.mps.data[i],
                 self.mps.data[i + 1],
@@ -71,19 +68,13 @@ class TEBD:
                 self.sbonds[i],
                 self.sbonds[i + 1]
             )
-
-            self.mps.data[i].modify(data=A)
-            self.mps.data[i + 1].modify(data=B)
             self.sbonds[i] = sAB
-        
+
         # apply right-most gate
         two_site_gate = self._gen_gate(self.local_H.hamiltonians[self.N - 2], tau)
-        A, B, sAB = self._apply_right_gate(
+        sAB = self._apply_right_gate(
             self.mps.data[self.N - 2], self.mps.data[self.N - 1], self.sbonds[self.N - 2], two_site_gate
         )
-
-        self.mps.data[self.N - 2].modify(data=A)
-        self.mps.data[self.N - 1].modify(data=B)
         self.sbonds[self.N - 2] = sAB
 
         # renormalize
@@ -143,9 +134,11 @@ class TEBD:
 
         return central_bond
 
-    def _apply_right_gate(self, left_site, right_site, central_bond, gate):
+    def _apply_right_gate(
+            self, left_site: qtn.Tensor, right_site: qtn.Tensor, central_bond: np.array, gate: np.array
+    ) -> np.array:
         """Apply gate to right-most sites.
-        
+
         Args:
             left_site: Left-most site
             right_site: Site adjacent to left-most site
@@ -153,7 +146,7 @@ class TEBD:
             gate: Gate representing time evolution
 
         Returns:
-            Tuple of new left, right, and bond
+            New bond weights
 
         """
         left_site_T = qtn.Tensor(left_site.data, inds=('k1', 'k2', 'k3'), tags=['left site'])
@@ -169,18 +162,16 @@ class TEBD:
 
         # truncate to reduced dimension
         chitemp = min(self.bond_dim, len(stemp))
-        left_site = utemp[:, range(chitemp)].reshape(left_site.data.shape[0], self.d, chitemp)
-        right_site = vhtemp[range(chitemp), :].reshape(chitemp, self.d)
-
-        # new weights
+        left_site.modify(data=utemp[:, range(chitemp)].reshape(left_site.data.shape[0], self.d, chitemp))
+        right_site.modify(data=vhtemp[range(chitemp), :].reshape(chitemp, self.d))
         central_bond = stemp[range(chitemp)] / LA.norm(stemp[range(chitemp)])
 
-        return left_site, right_site, central_bond
+        return central_bond
 
     def _apply_gate(
-            self, gate: np.array, left_site: np.array, right_site: np.array, left_bond: np.array,
+            self, gate: np.array, left_site: qtn.Tensor, right_site: qtn.Tensor, left_bond: np.array,
             central_bond: np.array, right_bond: np.array, stol=1e-7
-    ) -> Tuple[np.array, np.array, np.array]:
+    ) -> np.array:
         """Apply gate to two interior sites.
 
         Args:
@@ -193,7 +184,7 @@ class TEBD:
             stol: Threshold for singular values
 
         Returns:
-            Tuple of new left, right, and central bond
+            New bond weights
 
         """
         # ensure singular values are above tolerance threshold
@@ -221,13 +212,11 @@ class TEBD:
         vhtemp = vhtemp[range(chitemp), :].reshape(chitemp * self.d, right_site.data.shape[2])
 
         # remove environment weights to form new MPS tensors A and B
-        left_site = (np.diag(1 / left_bond) @ utemp).reshape(left_site.data.shape[0], self.d, chitemp)
-        right_site = (vhtemp @ np.diag(1 / right_bond)).reshape(chitemp, self.d, right_site.data.shape[2])
-
-        # new weights
+        left_site.modify(data=(np.diag(1 / left_bond) @ utemp).reshape(left_site.data.shape[0], self.d, chitemp))
+        right_site.modify(data=(vhtemp @ np.diag(1 / right_bond)).reshape(chitemp, self.d, right_site.data.shape[2]))
         central_bond = stemp[range(chitemp)] / LA.norm(stemp[range(chitemp)])
 
-        return left_site, right_site, central_bond
+        return central_bond
 
     def _gen_gate(self, hamiltonian: np.array, tau: float) -> np.array:
         """Generate gate for given Hamiltonian and time step.
@@ -256,10 +245,22 @@ def run_tebd(tebd_obj: TEBD, tau: float, num_iter: int, mid_steps: int):
         mid_steps: Number of steps between each diagnostic
 
     """
+    energies = []
+    wave_functions = []
+
     for k in range(num_iter):
         if np.mod(k, mid_steps) == 0 or k == num_iter:
             # compute energy
             energy = tebd_obj.compute_energy()
+            wave_function = tebd_obj.mps.wave_function()
+
             print(f"Iteration: {k} of {num_iter}, energy: {energy}")
 
+            energies.append(energy)
+            wave_functions.append(wave_function)
+
         tebd_obj.step(tau)
+
+    wave_functions = np.array(wave_functions)
+
+    return energies, wave_functions

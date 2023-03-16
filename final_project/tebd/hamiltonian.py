@@ -84,7 +84,7 @@ class IsingHamiltonian(Hamiltonian):
 
         return H_0
 
-    def interacting_hamiltonian(self):
+    def interacting_hamiltonian(self) -> np.array:
         """Get interacting part of the Hamiltonian.
 
         Returns:
@@ -107,7 +107,7 @@ class IsingHamiltonian(Hamiltonian):
 
         return H_int
 
-    def identity(self, n):
+    def identity(self, n: int) -> np.array:
         """Get identity matrix for n-qubit state.
 
         Args:

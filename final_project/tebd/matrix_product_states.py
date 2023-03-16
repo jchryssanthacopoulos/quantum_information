@@ -40,6 +40,11 @@ class MatrixProductState:
 
         self.normalize()
 
+    def wave_function(self):
+        """Return wavefunction corresponding to MPS."""
+        TNc = qtn.TensorNetwork(self.data) ^ ...
+        return TNc.data.reshape((self.d ** self.N))
+
     def rho(self) -> qtn.TensorNetwork:
         """Compute the density matrix of the MPS."""
         rho_tensors = []
