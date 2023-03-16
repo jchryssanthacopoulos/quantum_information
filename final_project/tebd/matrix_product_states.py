@@ -38,6 +38,8 @@ class MatrixProductState:
         state = np.random.rand(bond_dim, d)
         self.data.append(qtn.Tensor(state, inds=(f"i{N - 2}", f"k{N - 1}"), tags=[f"state {N}"]))
 
+        self.normalize()
+
     def rho(self):
         rho_tensors = []
 
@@ -51,11 +53,38 @@ class MatrixProductState:
 
         return qtn.TensorNetwork(rho_tensors)
 
-    def _update_indices(self, inds):
+    def norm(self):
+        tn = qtn.TensorNetwork(self.data)
+        norm = tn.H @ tn
+        return norm
+
+    def normalize(self):
+        self.data[0].modify(data=self.data[0].data / np.sqrt(self.norm()))
+
+    # def norm(self):
+    #     inner_product_T = []
+
+    #     for idx, ten in enumerate(self.data):
+    #         new_data = ten.data.conj()
+    #         new_inds = self._update_indices(ten.inds, update_external=False)
+    #         inner_product_T.append(qtn.Tensor(new_data, inds=new_inds, tags=[f"state {idx + 1} conj"]))
+
+    #     for ten in self.data:
+    #         inner_product_T.append(ten.copy())
+
+    #     return qtn.TensorNetwork(inner_product_T)
+
+    def _update_indices(self, inds, update_internal=True, update_external=True):
         new_inds = ()
         for i in inds:
             if i.startswith("k"):
-                new_inds += (f"k{int(i[1:]) + self.N}",)
+                if update_external:
+                    new_inds += (f"k{int(i[1:]) + self.N}",)
+                else:
+                    new_inds += (i,)
             if i.startswith("i"):
-                new_inds += (f"i{int(i[1:]) + self.N - 1}",)
+                if update_internal:
+                    new_inds += (f"i{int(i[1:]) + self.N - 1}",)
+                else:
+                    new_inds += (i,)
         return new_inds

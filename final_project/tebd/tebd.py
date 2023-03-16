@@ -1,18 +1,15 @@
 """Run TEBD algorithm given various parameters."""
 
-from typing import Optional
+from typing import Tuple
 
 import numpy as np
 from numpy import linalg as LA
 import quimb.tensor as qtn
 from scipy.linalg import expm
 
-from tebd.density_matrix import local_density_MPS
-from tebd.observables import compute_energy
-from tebd.time_evolution import apply_gate_MPS
-
-from tebd.matrix_product_states import MatrixProductState
+from tebd.hamiltonian import LocalHamiltonian
 from tebd.hamiltonian import Hamiltonian
+from tebd.matrix_product_states import MatrixProductState
 
 
 class TEBD:
@@ -21,7 +18,7 @@ class TEBD:
     REAL_TIME_EVOLUTION = "real"
     IMAG_TIME_EVOLUTION = "imag"
 
-    def __init__(self, mps: MatrixProductState, H: Hamiltonian, evol_type: str):
+    def __init__(self, mps: MatrixProductState, local_H: LocalHamiltonian, global_H: Hamiltonian, evol_type: str):
         """Initialize TEBD algorithm with states and Hamiltonian.
 
         Args:
@@ -33,14 +30,15 @@ class TEBD:
         if evol_type not in [self.REAL_TIME_EVOLUTION, self.IMAG_TIME_EVOLUTION]:
             raise Exception(f"Evolution type {evol_type} not supported")
 
-        if mps.d != H.d:
+        if mps.d != local_H.d:
             raise Exception("Dimension sizes of MPS and Hamiltonian do not agree")
 
-        if mps.N != H.N:
+        if mps.N != local_H.N:
             raise Exception("Number of sites of MPS and Hamiltonian do not agree")
 
         self.mps = mps
-        self.H = H
+        self.local_H = local_H
+        self.global_H = global_H
         self.evol_type = evol_type
 
         self.d = mps.d
@@ -58,7 +56,7 @@ class TEBD:
 
         """
         # apply left-most gate
-        two_site_gate = self._gen_gate(self.H.hamiltonians[0], tau)
+        two_site_gate = self._gen_gate(self.local_H.hamiltonians[0], tau)
         A, B, sAB = self._apply_left_gate(self.mps.data[0], self.mps.data[1], self.sbonds[0], two_site_gate)
 
         self.mps.data[0].modify(data=A)
@@ -66,7 +64,7 @@ class TEBD:
         self.sbonds[0] = sAB
 
         for i in range(1, self.N - 2):
-            two_site_gate = self._gen_gate(self.H.hamiltonians[i], tau)
+            two_site_gate = self._gen_gate(self.local_H.hamiltonians[i], tau)
 
             A, B, sAB = self._apply_gate(
                 two_site_gate,
@@ -82,7 +80,7 @@ class TEBD:
             self.sbonds[i] = sAB
         
         # apply right-most gate
-        two_site_gate = self._gen_gate(self.H.hamiltonians[self.N - 2], tau)
+        two_site_gate = self._gen_gate(self.local_H.hamiltonians[self.N - 2], tau)
         A, B, sAB = self._apply_right_gate(
             self.mps.data[self.N - 2], self.mps.data[self.N - 1], self.sbonds[self.N - 2], two_site_gate
         )
@@ -90,6 +88,29 @@ class TEBD:
         self.mps.data[self.N - 2].modify(data=A)
         self.mps.data[self.N - 1].modify(data=B)
         self.sbonds[self.N - 2] = sAB
+
+        # renormalize
+        self.mps.normalize()
+
+    def compute_energy(self) -> float:
+        """Compute energy of the MPS.
+
+        Returns:
+            Energy
+
+        """
+        rho = self.mps.rho()
+        rhoC = rho ^ ...
+
+        inds = tuple([f'k{i}' for i in range(2 * self.N)])
+
+        ham_tensor = qtn.Tensor(self.global_H.hamiltonian, inds=inds, tags=['ham'])
+        rho_tensor = qtn.Tensor(rhoC.data, inds=inds, tags=['rho'])
+
+        energy_tensor = ham_tensor & rho_tensor
+        energy = energy_tensor ^ ...
+
+        return energy
 
     def _apply_left_gate(self, left_site, right_site, central_bond, gate):
         """Apply gate to left-most sites.
@@ -162,7 +183,7 @@ class TEBD:
     def _apply_gate(
             self, gate: np.array, left_site: np.array, right_site: np.array, left_bond: np.array,
             central_bond: np.array, right_bond: np.array, stol=1e-7
-    ):
+    ) -> Tuple[np.array, np.array, np.array]:
         """Apply gate to two interior sites.
 
         Args:
@@ -224,79 +245,24 @@ class TEBD:
         """
         if self.evol_type == self.REAL_TIME_EVOLUTION:
             return expm(1j * tau * hamiltonian).reshape(self.d, self.d, self.d, self.d)
+
         return expm(-tau * hamiltonian).reshape(self.d, self.d, self.d, self.d)
 
 
-def run_tebd(
-        hamAB: np.ndarray,
-        hamBA: np.ndarray,
-        A: np.ndarray,
-        B: np.ndarray,
-        sAB: np.ndarray,
-        sBA: np.ndarray,
-        chi: int,
-        tau: float,
-        evotype: Optional[str] = 'imag',
-        numiter: Optional[int] = 1000,
-        midsteps: Optional[int] = 10,
-        E0: Optional[float] = 0.0
-):
-    """
-    Implementation of time evolution (real or imaginary) for MPS with 2-site unit
-    cell (A-B), based on TEBD algorithm.
+def run_tebd(tebd_obj: TEBD, tau: float, num_iter: int, mid_steps: int):
+    """Run the TEBD algorithm for given number of iterations.
+
     Args:
-    hamAB: nearest neighbor Hamiltonian coupling for A-B sites.
-    hamBA: nearest neighbor Hamiltonian coupling for B-A sites.
-    A: MPS tensor for A-sites of lattice.
-    B: MPS tensor for B-sites of lattice.
-    sAB: vector of weights for A-B links.
-    sBA: vector of weights for B-A links.
-    chi: maximum bond dimension of MPS.
-    tau: time-step of evolution.
-    evotype: set real (evotype='real') or imaginary (evotype='imag') evolution.
-    numiter: number of time-step iterations to take.
-    midsteps: number of time-steps between re-orthogonalization of the MPS.
-    E0: specify the ground energy (if known).
-    Returns:
-    np.ndarray: MPS tensor for A-sites;
-    np.ndarray: MPS tensor for B-sites;
-    np.ndarray: vector sAB of weights for A-B links.
-    np.ndarray: vector sBA of weights for B-A links.
-    np.ndarray: two-site reduced density matrix rhoAB for A-B sites
-    np.ndarray: two-site reduced density matrix rhoAB for B-A sites
+        tebd_obj: Object representing TEBD algorithm
+        tau: Timestep
+        num_iter: Number of iterations
+        mid_steps: Number of steps between each diagnostic
+
     """
-    # exponentiate Hamiltonian
-    d = A.shape[1]
-    if evotype == "real":
-        gateAB = expm(1j * tau * hamAB.reshape(d**2, d**2)).reshape(d, d, d, d)
-        gateBA = expm(1j * tau * hamBA.reshape(d**2, d**2)).reshape(d, d, d, d)
-    elif evotype == "imag":
-        gateAB = expm(-tau * hamAB.reshape(d**2, d**2)).reshape(d, d, d, d)
-        gateBA = expm(-tau * hamBA.reshape(d**2, d**2)).reshape(d, d, d, d)
+    for k in range(num_iter):
+        if np.mod(k, mid_steps) == 0 or k == num_iter:
+            # compute energy
+            energy = tebd_obj.compute_energy()
+            print(f"Iteration: {k} of {num_iter}, energy: {energy}")
 
-    for k in range(numiter + 1):
-        if np.mod(k, midsteps) == 0 or (k == numiter):
-            """ Compute energy and display """
-
-            # compute 2-site local reduced density matrices
-            rhoAB, rhoBA = local_density_MPS(A, sAB, B, sBA)
-
-            energy = compute_energy(hamAB, rhoAB, hamBA, rhoBA)
-
-            chitemp = min(A.shape[0], B.shape[0])
-            enDiff = energy - E0
-
-            print('iteration: %d of %d, chi: %d, t-step: %f, energy: %f, '
-                'energy error: %e' % (k, numiter, chitemp, tau, energy, enDiff))
-
-        """ Do evolution of MPS through one time-step """
-        if k < numiter:
-            # apply gate to A-B link
-            A, sAB, B = apply_gate_MPS(gateAB, A, sAB, B, sBA, chi)
-
-            # apply gate to B-A link
-            B, sBA, A = apply_gate_MPS(gateBA, B, sBA, A, sAB, chi)
-
-    rhoAB, rhoBA = local_density_MPS(A, sAB, B, sBA)
-    
-    return A, B, sAB, sBA, rhoAB, rhoBA
+        tebd_obj.step(tau)
