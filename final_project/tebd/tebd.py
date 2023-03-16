@@ -57,10 +57,7 @@ class TEBD:
         """
         # apply left-most gate
         two_site_gate = self._gen_gate(self.local_H.hamiltonians[0], tau)
-        A, B, sAB = self._apply_left_gate(self.mps.data[0], self.mps.data[1], self.sbonds[0], two_site_gate)
-
-        self.mps.data[0].modify(data=A)
-        self.mps.data[1].modify(data=B)
+        sAB = self._apply_left_gate(self.mps.data[0], self.mps.data[1], self.sbonds[0], two_site_gate)
         self.sbonds[0] = sAB
 
         for i in range(1, self.N - 2):
@@ -112,9 +109,11 @@ class TEBD:
 
         return energy
 
-    def _apply_left_gate(self, left_site, right_site, central_bond, gate):
+    def _apply_left_gate(
+            self, left_site: qtn.Tensor, right_site: qtn.Tensor, central_bond: np.array, gate: np.array
+    ) -> np.array:
         """Apply gate to left-most sites.
-        
+
         Args:
             left_site: Left-most site
             right_site: Site adjacent to left-most site
@@ -122,7 +121,7 @@ class TEBD:
             gate: Gate representing time evolution
 
         Returns:
-            Tuple of new left, right, and bond
+            New bond weights
 
         """
         left_site_T = qtn.Tensor(left_site.data, inds=('k1', 'k2'), tags=['left site'])
@@ -138,13 +137,11 @@ class TEBD:
 
         # truncate to reduced dimension
         chitemp = min(self.bond_dim, len(stemp))
-        left_site = utemp.reshape(self.d, chitemp)
-        right_site = vhtemp.reshape(chitemp, self.d, right_site.data.shape[2])
-
-        # new weights
+        left_site.modify(data=utemp.reshape(self.d, chitemp))
+        right_site.modify(data=vhtemp.reshape(chitemp, self.d, right_site.data.shape[2]))
         central_bond = stemp[range(chitemp)] / LA.norm(stemp[range(chitemp)])
 
-        return left_site, right_site, central_bond
+        return central_bond
 
     def _apply_right_gate(self, left_site, right_site, central_bond, gate):
         """Apply gate to right-most sites.
