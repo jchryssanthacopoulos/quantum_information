@@ -40,7 +40,8 @@ class MatrixProductState:
 
         self.normalize()
 
-    def rho(self):
+    def rho(self) -> qtn.TensorNetwork:
+        """Compute the density matrix of the MPS."""
         rho_tensors = []
 
         for idx, ten in enumerate(self.data):
@@ -54,37 +55,29 @@ class MatrixProductState:
         return qtn.TensorNetwork(rho_tensors)
 
     def norm(self):
+        """Get the norm of the MPS."""
         tn = qtn.TensorNetwork(self.data)
         norm = tn.H @ tn
         return norm
 
     def normalize(self):
+        """Normalize the MPS."""
         self.data[0].modify(data=self.data[0].data / np.sqrt(self.norm()))
 
-    # def norm(self):
-    #     inner_product_T = []
+    def _update_indices(self, inds):
+        """Update the given indices to correspond to new internal and external legs.
 
-    #     for idx, ten in enumerate(self.data):
-    #         new_data = ten.data.conj()
-    #         new_inds = self._update_indices(ten.inds, update_external=False)
-    #         inner_product_T.append(qtn.Tensor(new_data, inds=new_inds, tags=[f"state {idx + 1} conj"]))
+        Args:
+            inds (tuple): Indices
 
-    #     for ten in self.data:
-    #         inner_product_T.append(ten.copy())
+        Returns:
+            New indices
 
-    #     return qtn.TensorNetwork(inner_product_T)
-
-    def _update_indices(self, inds, update_internal=True, update_external=True):
+        """
         new_inds = ()
         for i in inds:
             if i.startswith("k"):
-                if update_external:
-                    new_inds += (f"k{int(i[1:]) + self.N}",)
-                else:
-                    new_inds += (i,)
+                new_inds += (f"k{int(i[1:]) + self.N}",)
             if i.startswith("i"):
-                if update_internal:
-                    new_inds += (f"i{int(i[1:]) + self.N - 1}",)
-                else:
-                    new_inds += (i,)
+                new_inds += (f"i{int(i[1:]) + self.N - 1}",)
         return new_inds

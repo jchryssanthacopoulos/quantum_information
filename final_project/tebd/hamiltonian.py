@@ -46,6 +46,7 @@ class Hamiltonian:
 
 
 class IsingHamiltonian(Hamiltonian):
+    """Create Hamiltonian for Ising chain."""
 
     def __init__(self, N: int, lmda: float):
         """Create Hamiltonian for given number of sites.
