@@ -91,11 +91,6 @@ class TEBD:
         self.mps.data[self.N - 1].modify(data=B)
         self.sbonds[self.N - 2] = sAB
 
-    def _gen_gate(self, hamiltonian: np.array, tau: float) -> np.array:
-        if self.evol_type == self.REAL_TIME_EVOLUTION:
-            return expm(1j * tau * hamiltonian).reshape(self.d, self.d, self.d, self.d)
-        return expm(-tau * hamiltonian).reshape(self.d, self.d, self.d, self.d)
-
     def _apply_left_gate(self, left_site, right_site, central_bond, gate):
         """Apply gate to left-most sites.
         
@@ -168,6 +163,21 @@ class TEBD:
             self, gate: np.array, left_site: np.array, right_site: np.array, left_bond: np.array,
             central_bond: np.array, right_bond: np.array, stol=1e-7
     ):
+        """Apply gate to two interior sites.
+
+        Args:
+            left_site: Left-most site
+            right_site: Site adjacent to left-most site
+            left_bond: Left to the left of left site
+            central_bond: Bond between two sites
+            right_bond: Bond to the right of right site
+            gate: Gate representing time evolution
+            stol: Threshold for singular values
+
+        Returns:
+            Tuple of new left, right, and central bond
+
+        """
         # ensure singular values are above tolerance threshold
         left_bond = left_bond * (left_bond > stol) + stol * (left_bond < stol)
         right_bond = right_bond * (right_bond > stol) + stol * (right_bond < stol)
@@ -200,6 +210,21 @@ class TEBD:
         central_bond = stemp[range(chitemp)] / LA.norm(stemp[range(chitemp)])
 
         return left_site, right_site, central_bond
+
+    def _gen_gate(self, hamiltonian: np.array, tau: float) -> np.array:
+        """Generate gate for given Hamiltonian and time step.
+
+        Args:
+            hamiltonian: Matrix representing Hamiltonian
+            tau: Time step
+
+        Returns:
+            Matrix representing time evolution operator
+
+        """
+        if self.evol_type == self.REAL_TIME_EVOLUTION:
+            return expm(1j * tau * hamiltonian).reshape(self.d, self.d, self.d, self.d)
+        return expm(-tau * hamiltonian).reshape(self.d, self.d, self.d, self.d)
 
 
 def run_tebd(

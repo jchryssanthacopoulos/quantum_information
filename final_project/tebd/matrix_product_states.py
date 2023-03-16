@@ -41,13 +41,13 @@ class MatrixProductState:
     def rho(self):
         rho_tensors = []
 
-        for ten in self.data:
-            rho_tensors.append(ten.copy())
-
         for idx, ten in enumerate(self.data):
             new_data = ten.data.conj()
             new_inds = self._update_indices(ten.inds)
             rho_tensors.append(qtn.Tensor(new_data, inds=new_inds, tags=[f"state {idx + 1} conj"]))
+
+        for ten in self.data:
+            rho_tensors.append(ten.copy())
 
         return qtn.TensorNetwork(rho_tensors)
 
