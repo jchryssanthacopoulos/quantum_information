@@ -18,9 +18,12 @@ class TEBD:
     REAL_TIME_EVOLUTION = "real"
     IMAG_TIME_EVOLUTION = "imag"
 
+    ST_ORDER_1 = "ST1"
+    ST_ORDER_2 = "ST2"
+
     def __init__(
             self, mps: MatrixProductState, local_H: LocalHamiltonian, global_H: Hamiltonian, evol_type: str,
-            bond_dim: Optional[int] = None
+            bond_dim: Optional[int] = None, st_order: str = None
     ):
         """Initialize TEBD algorithm with states and Hamiltonian.
 
@@ -29,10 +32,16 @@ class TEBD:
             H: Hamiltonian object
             evol_type: Type of time evolution (e.g., "real" or "imag")
             bond_dim: Bond dimension to use when updating (if not set, use bond_dim from the underlying MPS)
+            st_order: Order of Suzuki-Trotter decomposition (i.e., "ST1" or "ST2")
 
         """
         if evol_type not in [self.REAL_TIME_EVOLUTION, self.IMAG_TIME_EVOLUTION]:
             raise Exception(f"Evolution type {evol_type} not supported")
+
+        if not st_order:
+            st_order = self.ST_ORDER_1
+        elif st_order not in [self.ST_ORDER_1, self.ST_ORDER_2]:
+            raise Exception(f"Suzuki-Trotter order {st_order} not supported")
 
         if mps.d != local_H.d:
             raise Exception("Dimension sizes of MPS and Hamiltonian do not agree")
@@ -44,6 +53,7 @@ class TEBD:
         self.local_H = local_H
         self.global_H = global_H
         self.evol_type = evol_type
+        self.st_order = st_order
 
         self.d = mps.d
         self.N = mps.N
@@ -63,29 +73,23 @@ class TEBD:
             tau: Time step
 
         """
-        # apply left-most gate
-        two_site_gate = self._gen_gate(self.local_H.hamiltonians[0], tau)
-        sAB = self._apply_left_gate(self.mps.data[0], self.mps.data[1], self.sbonds[0], two_site_gate)
-        self.sbonds[0] = sAB
+        if self.st_order == self.ST_ORDER_1:
+            # apply all gates successively for the same time
+            for gate_idx in range(self.N - 1):
+                self._apply_gate(gate_idx, tau)
+        elif self.st_order == self.ST_ORDER_2:
+            # apply odd gates for tau / 2, then even for tau, then odd again for tau / 2
+            odd_gate_nums = range(0, self.N - 1, 2)
+            even_gate_nums = range(1, self.N - 1, 2)
 
-        for i in range(1, self.N - 2):
-            two_site_gate = self._gen_gate(self.local_H.hamiltonians[i], tau)
-            sAB = self._apply_gate(
-                two_site_gate,
-                self.mps.data[i],
-                self.mps.data[i + 1],
-                self.sbonds[i - 1],
-                self.sbonds[i],
-                self.sbonds[i + 1]
-            )
-            self.sbonds[i] = sAB
+            for idx in odd_gate_nums:
+                self._apply_gate(idx, tau / 2)
 
-        # apply right-most gate
-        two_site_gate = self._gen_gate(self.local_H.hamiltonians[self.N - 2], tau)
-        sAB = self._apply_right_gate(
-            self.mps.data[self.N - 2], self.mps.data[self.N - 1], self.sbonds[self.N - 2], two_site_gate
-        )
-        self.sbonds[self.N - 2] = sAB
+            for idx in even_gate_nums:
+                self._apply_gate(idx, tau)
+
+            for idx in odd_gate_nums:
+                self._apply_gate(idx, tau / 2)
 
         # renormalize
         self.mps.normalize()
@@ -109,6 +113,38 @@ class TEBD:
         energy = energy_tensor ^ ...
 
         return energy
+
+    def _apply_gate(self, gate_idx: int, tau: float):
+        """Apply gate with given index for given time.
+
+        Args:
+            gate_idx: Index of gate to apply
+            tau: Time step
+
+        """
+        two_site_gate = self._gen_gate(self.local_H.hamiltonians[gate_idx], tau)
+
+        if gate_idx == 0:
+            # apply left-most gate
+            sAB = self._apply_left_gate(
+                self.mps.data[gate_idx], self.mps.data[gate_idx + 1], self.sbonds[gate_idx], two_site_gate
+            )
+        elif gate_idx == self.N - 2:
+            # apply right-most gate
+            sAB = self._apply_right_gate(
+                self.mps.data[gate_idx], self.mps.data[gate_idx + 1], self.sbonds[gate_idx], two_site_gate
+            )
+        else:
+            sAB = self._apply_interior_gate(
+                two_site_gate,
+                self.mps.data[gate_idx],
+                self.mps.data[gate_idx + 1],
+                self.sbonds[gate_idx - 1],
+                self.sbonds[gate_idx],
+                self.sbonds[gate_idx + 1]
+            )
+
+        self.sbonds[gate_idx] = sAB
 
     def _apply_left_gate(
             self, left_site: qtn.Tensor, right_site: qtn.Tensor, central_bond: np.array, gate: np.array
@@ -178,7 +214,7 @@ class TEBD:
 
         return central_bond
 
-    def _apply_gate(
+    def _apply_interior_gate(
             self, gate: np.array, left_site: qtn.Tensor, right_site: qtn.Tensor, left_bond: np.array,
             central_bond: np.array, right_bond: np.array, stol=1e-7
     ) -> np.array:
