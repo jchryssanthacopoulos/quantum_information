@@ -1,9 +1,22 @@
 """Compute various observables."""
 
+import numpy as np
 import quimb.tensor as qtn
 
 
-def compute_energy(hamAB, rhoAB, hamBA, rhoBA):
+def compute_energy(hamAB: np.array, rhoAB: np.array, hamBA: np.array, rhoBA: np.array) -> float:
+    """Calculate the energy for the given Hamiltonian and density matrix.
+
+    Args:
+        hamAB: Hamiltonian for A-B link
+        rhoAB: Density matrix for A-B link
+        hamBA: Hamiltonian for B-A link
+        rhoBA: Density matrix for B-A link
+
+    Returns:
+        Average energy
+
+    """
     hamAB_tensor = qtn.Tensor(hamAB, inds=('k1', 'k2', 'k3', 'k4'), tags=['hamAB'])
     rhoAB_tensor = qtn.Tensor(rhoAB, inds=('k1', 'k2', 'k3', 'k4'), tags=['rhoAB'])
     energyAB_tensor = hamAB_tensor & rhoAB_tensor

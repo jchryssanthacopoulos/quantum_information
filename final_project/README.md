@@ -26,3 +26,11 @@ This contracted tensor network represents the local density matrix:
 The average energy of two sites is:
 
 ![image](figures/average_energy.png)
+
+## Results
+
+The TEBD algorithm was run for 500 iterations using a timestep of 0.01 for various values of $N$ (the number of sites). 
+The initial wavefunction was randomized. Below is a plot of the ground state energy as a function of $N$ for the case
+of $\lambda = 0$.
+
+![image](figures/ground_state_energy_lambda_0.png)

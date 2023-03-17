@@ -1,13 +1,24 @@
 """Compute the density matrices associated with matrix product states."""
 
-import numpy as np
+from typing import Tuple
 
+import numpy as np
 import quimb.tensor as qtn
 
 
-def local_density_MPS(A, sAB, B, sBA):
-    """Compute the local reduced density matrix for two sites A and B."""
+def local_density_MPS(A, sAB, B, sBA) -> Tuple[np.array, np.array]:
+    """Compute the local reduced density matrix for two sites A and B.
 
+    Args:
+        A: Tensor for site A
+        sAB: Tensor for link between A and B
+        B: Tensor for site B
+        sBA: Tensor for link between B and A
+
+    Returns:
+        Density matrices for A-B and B-A
+
+    """
     # recast singular weights into a matrix
     mAB = np.diag(sAB)
     mBA = np.diag(sBA)
