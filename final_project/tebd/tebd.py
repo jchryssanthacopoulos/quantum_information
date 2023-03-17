@@ -1,5 +1,7 @@
 """Run TEBD algorithm given various parameters."""
 
+from typing import Optional
+
 import numpy as np
 from numpy import linalg as LA
 import quimb.tensor as qtn
@@ -16,13 +18,17 @@ class TEBD:
     REAL_TIME_EVOLUTION = "real"
     IMAG_TIME_EVOLUTION = "imag"
 
-    def __init__(self, mps: MatrixProductState, local_H: LocalHamiltonian, global_H: Hamiltonian, evol_type: str):
+    def __init__(
+            self, mps: MatrixProductState, local_H: LocalHamiltonian, global_H: Hamiltonian, evol_type: str,
+            bond_dim: Optional[int] = None
+    ):
         """Initialize TEBD algorithm with states and Hamiltonian.
 
         Args:
             mps: Matrix product state object
             H: Hamiltonian object
             evol_type: Type of time evolution (e.g., "real" or "imag")
+            bond_dim: Bond dimension to use when updating (if not set, use bond_dim from the underlying MPS)
 
         """
         if evol_type not in [self.REAL_TIME_EVOLUTION, self.IMAG_TIME_EVOLUTION]:
@@ -41,7 +47,11 @@ class TEBD:
 
         self.d = mps.d
         self.N = mps.N
-        self.bond_dim = mps.bond_dim
+
+        if not bond_dim:
+            self.bond_dim = mps.bond_dim
+        else:
+            self.bond_dim = bond_dim
 
         # create auxiliary bond matrices
         self.sbonds = [np.ones(self.mps.bond_dim) / np.sqrt(self.mps.bond_dim)] * (self.N - 1)

@@ -1,44 +1,77 @@
 """Class for manipulating matrix product states."""
 
-import numpy as np
+from typing import List
+from typing import Optional
 
+import numpy as np
 import quimb.tensor as qtn
 
 
 class MatrixProductState:
     """Class representing a matrix product state with given number of states."""
 
-    def __init__(self, d: int, N: int, bond_dim: int):
+    def __init__(self, d: int, N: int, bond_dim: int, states: Optional[List[np.array]] = None):
         """Initialize the MPS.
 
         Args:
             d: Dimension of each state
             N: Number of states
             bond_dim: Bond dimension between states
+            states: Optional states to initialize with
 
         """
-        if N < 3:
-            raise Exception("Number of states must be at least 3")
-
         self.d = d
         self.N = N
         self.bond_dim = bond_dim
 
         self.data = []
 
+        if not states:
+            states = []
+            states.append(np.random.rand(d, bond_dim))
+            for i in range(1, N - 1):
+                states.append(np.random.rand(bond_dim, d, bond_dim))
+            states.append(np.random.rand(bond_dim, d))
+
         # create left-most tensor
-        state = np.random.rand(d, bond_dim)
-        self.data.append(qtn.Tensor(state, inds=("k0", "i0"), tags=["state 1"]))
+        self.data.append(qtn.Tensor(states[0], inds=("k0", "i0"), tags=["state 1"]))
 
         for i in range(1, N - 1):
-            state = np.random.rand(bond_dim, d, bond_dim)
-            self.data.append(qtn.Tensor(state, inds=(f"i{i - 1}", f"k{i}", f"i{i}"), tags=[f"state {i + 1}"]))
+            self.data.append(qtn.Tensor(states[i], inds=(f"i{i - 1}", f"k{i}", f"i{i}"), tags=[f"state {i + 1}"]))
 
         # create right-most state
-        state = np.random.rand(bond_dim, d)
-        self.data.append(qtn.Tensor(state, inds=(f"i{N - 2}", f"k{N - 1}"), tags=[f"state {N}"]))
+        self.data.append(qtn.Tensor(states[N - 1], inds=(f"i{N - 2}", f"k{N - 1}"), tags=[f"state {N}"]))
 
         self.normalize()
+
+    @classmethod
+    def init_from_state(cls, state_str: str):
+        """Create a specific state like '000' corresponding to provided string.
+
+        Args:
+            state_str: State like '00010001' to initialize MPS with
+
+        Returns:
+            MPS corresponding to state
+
+        """
+        array_map = {
+            "0": np.array([1.0, 0.0]),
+            "1": np.array([0.0, 1.0])
+        }
+
+        N = len(state_str)
+
+        states = []
+        for idx, state in enumerate(state_str):
+            if idx == 0:
+                states.append(array_map[state].reshape(-1, 1))
+            elif idx == N - 1:
+                states.append(array_map[state].reshape(1, -1))
+            else:
+                states.append(array_map[state].reshape(1, -1, 1))
+
+        return MatrixProductState(d=2, N=N, bond_dim=1, states=states)
 
     def wave_function(self):
         """Return wavefunction corresponding to MPS."""

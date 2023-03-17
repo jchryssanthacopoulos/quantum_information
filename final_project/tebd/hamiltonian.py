@@ -1,7 +1,6 @@
 """Class describing Hamiltonians of various types of systems."""
 
 import numpy as np
-
 import quimb as qu
 
 
@@ -9,6 +8,13 @@ class LocalHamiltonian:
     """Base class for representing local Hamiltonians."""
 
     def __init__(self, d: int, N: int):
+        """Initialize local Hamiltonian.
+
+        Args:
+            d: Number of dimensions
+            N: Number of sites
+
+        """
         self.d = d
         self.N = N
         self.hamiltonians = np.zeros((N - 1, d ** 2, d ** 2))
@@ -40,6 +46,13 @@ class Hamiltonian:
     """Base class for representing general Hamiltonians."""
 
     def __init__(self, d: int, N: int):
+        """Initialize Hamiltonian.
+
+        Args:
+            d: Number of dimensions
+            N: Number of sites
+
+        """
         self.d = d
         self.N = N
         self.hamiltonian = np.zeros((d ** N, d ** N))
