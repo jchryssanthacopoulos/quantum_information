@@ -1,15 +1,30 @@
 """Evolve the matrix product states with local Hamiltonians."""
 
+from typing import Optional
+from typing import Tuple
+
 from numpy import linalg as LA
 import numpy as np
-
 import quimb.tensor as qtn
 
 
-def apply_gate_MPS(gateAB, A, sAB, B, sBA, chi, stol=1e-7):
-    """ apply a gate to an MPS across and a A-B link. Truncate the MPS back to
-    some desired dimension chi"""
+def apply_gate_MPS(
+        gateAB: np.array, A: np.array, sAB: np.array, B: np.array, sBA: np.array, chi: int, stol: Optional[float]=1e-7
+) -> Tuple[np.array, np.array, np.array]:
+    """Apply a gate to an MPS across and a A-B link. Truncate the MPS back to some desired bond dimension.
 
+    Args:
+        A: A site
+        sAB: Singular values between A and B
+        B: B site
+        sBA: Singular values between B and A
+        chi: Bond dimension
+        stol: Minimum value of singular values
+
+    Returns:
+        New A, sAB, and B
+
+    """
     # ensure singular values are above tolerance threshold
     sBA_trim = sBA * (sBA > stol) + stol * (sBA < stol)
 
