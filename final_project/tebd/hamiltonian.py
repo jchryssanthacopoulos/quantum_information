@@ -25,18 +25,19 @@ class LocalHamiltonian:
 class LocalIsingHamiltonian(LocalHamiltonian):
     """Create local Hamiltonians for Ising chain."""
 
-    def __init__(self, N: int, lmda: float):
+    def __init__(self, N: int, J: Optional[float] = 1.0, lmda: Optional[float] = 0.0):
         """Create Hamiltonians for given number of sites.
 
         Args:
             N: Number of sites
+            J: Coupling between neighboring spins
             lmda: Coupling to external magnetic field
 
         """
         super(LocalIsingHamiltonian, self).__init__(2, N)
 
         hamiltonian_two_site = (
-            np.kron(qu.pauli("X"), qu.pauli("X")) +
+            J * np.kron(qu.pauli("X"), qu.pauli("X")) +
             lmda * np.kron(qu.pauli("Z"), np.eye(2)) +
             lmda * np.kron(np.eye(2), qu.pauli("Z"))
         )
@@ -99,11 +100,12 @@ class Hamiltonian:
 class IsingHamiltonian(Hamiltonian):
     """Create Hamiltonian for Ising chain."""
 
-    def __init__(self, N: int, lmda: float):
+    def __init__(self, N: int, J: Optional[float] = 1.0, lmda: Optional[float] = 0.0):
         """Create Hamiltonian for given number of sites.
 
         Args:
             N: Number of sites
+            J: Coupling between neighboring spins
             lmda: Coupling to external magnetic field
 
         """
@@ -112,7 +114,7 @@ class IsingHamiltonian(Hamiltonian):
         H_0 = self.non_interacting_hamiltonian()
         H_int = self.interacting_hamiltonian()
 
-        self.hamiltonian = lmda * H_0 + H_int
+        self.hamiltonian = lmda * H_0 + J * H_int
 
     def non_interacting_hamiltonian(self) -> np.array:
         """Get non-interacting part of the Hamiltonian.

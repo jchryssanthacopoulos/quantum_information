@@ -268,7 +268,7 @@ class TEBD:
         return expm(-tau * hamiltonian).reshape(self.d, self.d, self.d, self.d)
 
 
-def run_tebd(tebd_obj: TEBD, tau: float, num_iter: int, mid_steps: int):
+def run_tebd(tebd_obj: TEBD, tau: float, num_iter: int, mid_steps: int, print_to_stdout: Optional[bool] = True):
     """Run the TEBD algorithm for given number of iterations.
 
     Args:
@@ -276,6 +276,7 @@ def run_tebd(tebd_obj: TEBD, tau: float, num_iter: int, mid_steps: int):
         tau: Timestep
         num_iter: Number of iterations
         mid_steps: Number of steps between each diagnostic
+        print_to_stdout: Whether to print diagnostic information to screen
 
     """
     energies = []
@@ -287,7 +288,8 @@ def run_tebd(tebd_obj: TEBD, tau: float, num_iter: int, mid_steps: int):
             energy = tebd_obj.compute_energy()
             wave_function = tebd_obj.mps.wave_function()
 
-            print(f"Iteration: {k} of {num_iter}, energy: {energy}")
+            if print_to_stdout:
+                print(f"Iteration: {k} of {num_iter}, energy: {energy}")
 
             energies.append(energy)
             wave_functions.append(wave_function)
