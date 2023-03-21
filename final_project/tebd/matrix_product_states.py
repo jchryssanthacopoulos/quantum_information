@@ -117,9 +117,27 @@ class MatrixProductState:
         self.data[0].modify(data=self.data[0].data / np.sqrt(self.norm()))
 
     def get_state(self, idx: int) -> qtn.Tensor:
+        """Get state for site given by index.
+
+        Args:
+            idx: Index of state to retrieve
+
+        Returns:
+            Tensor corresponding to state
+
+        """
         return self.data[2 * idx]
 
     def get_sv(self, idx: int) -> qtn.Tensor:
+        """Get singular values for given index.
+
+        Args:
+            idx: Index of singular values to retrieve
+
+        Returns:
+            Tensor corresponding to singular values
+
+        """
         return self.data[2 * idx + 1]
 
     def _update_indices(self, inds):
