@@ -7,9 +7,9 @@ from numpy import linalg as LA
 import quimb.tensor as qtn
 from scipy.linalg import expm
 
-from tebd.hamiltonian import LocalHamiltonian
-from tebd.hamiltonian import Hamiltonian
-from tebd.matrix_product_states import MatrixProductState
+from hamiltonian import LocalHamiltonian
+from hamiltonian import Hamiltonian
+from matrix_product_states import MatrixProductState
 
 
 class TEBD:
@@ -20,6 +20,8 @@ class TEBD:
 
     ST_ORDER_1 = "ST1"
     ST_ORDER_2 = "ST2"
+    ST_ORDER_4 = "ST4"
+
 
     def __init__(
             self, mps: MatrixProductState, local_H: LocalHamiltonian, global_H: Hamiltonian, evol_type: str,
@@ -40,7 +42,7 @@ class TEBD:
 
         if not st_order:
             st_order = self.ST_ORDER_1
-        elif st_order not in [self.ST_ORDER_1, self.ST_ORDER_2]:
+        elif st_order not in [self.ST_ORDER_1, self.ST_ORDER_2, self.ST_ORDER_4]:
             raise Exception(f"Suzuki-Trotter order {st_order} not supported")
 
         if mps.d != local_H.d:
@@ -90,6 +92,42 @@ class TEBD:
 
             for idx in odd_gate_nums:
                 self._apply_gate(idx, tau / 2)
+                
+        elif self.st_order == self.ST_ORDER_4:
+            
+            tau_1 = (1/(4-4**(1/3)))*tau
+            tau_2 = (1-4*tau_1)*tau
+            odd_gate_nums = range(0, self.N - 1, 2)
+            even_gate_nums = range(1, self.N - 1, 2)
+            
+            for i in range(0,2):
+                for idx in odd_gate_nums:
+                    self._apply_gate(idx, tau_1 / 2)
+    
+                for idx in even_gate_nums:
+                    self._apply_gate(idx, tau_1)
+    
+                for idx in odd_gate_nums:
+                    self._apply_gate(idx, tau_1 / 2)
+                
+            for idx in odd_gate_nums:
+                self._apply_gate(idx, tau_2 / 2)
+
+            for idx in even_gate_nums:
+                self._apply_gate(idx, tau_2)
+
+            for idx in odd_gate_nums:
+                self._apply_gate(idx, tau_2 / 2)
+                
+            for i in range(0,2):
+                for idx in odd_gate_nums:
+                    self._apply_gate(idx, tau_1 / 2)
+    
+                for idx in even_gate_nums:
+                    self._apply_gate(idx, tau_1)
+    
+                for idx in odd_gate_nums:
+                    self._apply_gate(idx, tau_1 / 2)
 
         # renormalize
         self.mps.normalize()
