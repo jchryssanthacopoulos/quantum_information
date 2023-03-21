@@ -25,6 +25,7 @@ class MatrixProductState:
         self.bond_dim = bond_dim
 
         self.data = []
+        self.singular_values = []
 
         if not states:
             states = []
@@ -33,14 +34,27 @@ class MatrixProductState:
                 states.append(np.random.rand(bond_dim, d, bond_dim))
             states.append(np.random.rand(bond_dim, d))
 
-        # create left-most tensor
+        # create left-most state
         self.data.append(qtn.Tensor(states[0], inds=("k0", "i0"), tags=["state 1"]))
 
         for i in range(1, N - 1):
-            self.data.append(qtn.Tensor(states[i], inds=(f"i{i - 1}", f"k{i}", f"i{i}"), tags=[f"state {i + 1}"]))
+            self.singular_values.append(np.eye(bond_dim, bond_dim))
+
+            self.data.append(
+                qtn.Tensor(self.singular_values[-1], inds=(f"i{2 * (i - 1)}", f"i{2 * i - 1}"), tags=[f"SV {i}"])
+            )
+
+            self.data.append(
+                qtn.Tensor(states[i], inds=(f"i{2 * i - 1}", f"k{i}", f"i{2 * i}"), tags=[f"state {i + 1}"]))
 
         # create right-most state
-        self.data.append(qtn.Tensor(states[N - 1], inds=(f"i{N - 2}", f"k{N - 1}"), tags=[f"state {N}"]))
+        self.singular_values.append(np.eye(bond_dim, bond_dim))
+
+        self.data.append(
+            qtn.Tensor(self.singular_values[-1], inds=(f"i{2 * (N - 2)}", f"i{2 * N - 3}"), tags=[f"SV {N - 1}"])
+        )
+
+        self.data.append(qtn.Tensor(states[N - 1], inds=(f"i{2 * N - 3}", f"k{N - 1}"), tags=[f"state {N}"]))
 
         self.normalize()
 
@@ -102,6 +116,12 @@ class MatrixProductState:
         """Normalize the MPS."""
         self.data[0].modify(data=self.data[0].data / np.sqrt(self.norm()))
 
+    def get_state(self, idx: int) -> qtn.Tensor:
+        return self.data[2 * idx]
+
+    def get_sv(self, idx: int) -> qtn.Tensor:
+        return self.data[2 * idx + 1]
+
     def _update_indices(self, inds):
         """Update the given indices to correspond to new internal and external legs.
 
@@ -117,5 +137,5 @@ class MatrixProductState:
             if i.startswith("k"):
                 new_inds += (f"k{int(i[1:]) + self.N}",)
             if i.startswith("i"):
-                new_inds += (f"i{int(i[1:]) + self.N - 1}",)
+                new_inds += (f"i{int(i[1:]) + 2 * (self.N - 1)}",)
         return new_inds

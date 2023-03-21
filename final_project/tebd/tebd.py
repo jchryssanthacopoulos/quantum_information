@@ -126,29 +126,28 @@ class TEBD:
 
         if gate_idx == 0:
             # apply left-most gate
-            sAB = self._apply_left_gate(
-                self.mps.data[gate_idx], self.mps.data[gate_idx + 1], self.sbonds[gate_idx], two_site_gate
+            self._apply_left_gate(
+                self.mps.get_state(gate_idx), self.mps.get_state(gate_idx + 1), self.mps.get_sv(gate_idx), two_site_gate
             )
-        elif gate_idx == self.N - 2:
+            return
+
+        if gate_idx == self.N - 2:
             # apply right-most gate
-            sAB = self._apply_right_gate(
-                self.mps.data[gate_idx], self.mps.data[gate_idx + 1], self.sbonds[gate_idx], two_site_gate
+            self._apply_right_gate(
+                self.mps.get_state(gate_idx), self.mps.get_state(gate_idx + 1), self.mps.get_sv(gate_idx), two_site_gate
             )
-        else:
-            sAB = self._apply_interior_gate(
-                two_site_gate,
-                self.mps.data[gate_idx],
-                self.mps.data[gate_idx + 1],
-                self.sbonds[gate_idx - 1],
-                self.sbonds[gate_idx],
-                self.sbonds[gate_idx + 1]
-            )
+            return
 
-        self.sbonds[gate_idx] = sAB
+        self._apply_interior_gate(
+            two_site_gate,
+            self.mps.get_state(gate_idx),
+            self.mps.get_state(gate_idx + 1),
+            self.mps.get_sv(gate_idx - 1),
+            self.mps.get_sv(gate_idx),
+            self.mps.get_sv(gate_idx + 1)
+        )
 
-    def _apply_left_gate(
-            self, left_site: qtn.Tensor, right_site: qtn.Tensor, central_bond: np.array, gate: np.array
-    ) -> np.array:
+    def _apply_left_gate(self, left_site: qtn.Tensor, right_site: qtn.Tensor, central_bond: qtn.Tensor, gate: np.array):
         """Apply gate to left-most sites.
 
         Args:
@@ -157,12 +156,9 @@ class TEBD:
             central_bond: Bond between two sites
             gate: Gate representing time evolution
 
-        Returns:
-            New bond weights
-
         """
         left_site_T = qtn.Tensor(left_site.data, inds=('k1', 'k2'), tags=['left site'])
-        central_bond_T = qtn.Tensor(np.diag(central_bond), inds=('k2', 'k3'), tags=['central bond'])
+        central_bond_T = qtn.Tensor(central_bond.data, inds=('k2', 'k3'), tags=['central bond'])
         right_site_T = qtn.Tensor(right_site.data, inds=('k3', 'k4', 'k5'), tags=['right site'])
         gate_T = qtn.Tensor(gate, inds=('f0', 'f1', 'k1', 'k4'), tags=['gate'])
 
@@ -176,13 +172,11 @@ class TEBD:
         chitemp = min(self.bond_dim, len(stemp))
         left_site.modify(data=utemp.reshape(self.d, chitemp))
         right_site.modify(data=vhtemp.reshape(chitemp, self.d, right_site.data.shape[2]))
-        central_bond = stemp[range(chitemp)] / LA.norm(stemp[range(chitemp)])
-
-        return central_bond
+        central_bond.modify(data=np.diag(stemp[range(chitemp)] / LA.norm(stemp[range(chitemp)])))
 
     def _apply_right_gate(
-            self, left_site: qtn.Tensor, right_site: qtn.Tensor, central_bond: np.array, gate: np.array
-    ) -> np.array:
+            self, left_site: qtn.Tensor, right_site: qtn.Tensor, central_bond: qtn.Tensor, gate: np.array
+    ):
         """Apply gate to right-most sites.
 
         Args:
@@ -191,12 +185,9 @@ class TEBD:
             central_bond: Bond between two sites
             gate: Gate representing time evolution
 
-        Returns:
-            New bond weights
-
         """
         left_site_T = qtn.Tensor(left_site.data, inds=('k1', 'k2', 'k3'), tags=['left site'])
-        central_bond_T = qtn.Tensor(np.diag(central_bond), inds=('k3', 'k4'), tags=['central bond'])
+        central_bond_T = qtn.Tensor(central_bond.data, inds=('k3', 'k4'), tags=['central bond'])
         right_site_T = qtn.Tensor(right_site.data, inds=('k4', 'k5'), tags=['right site'])
         gate_T = qtn.Tensor(gate, inds=('f0', 'f1', 'k2', 'k5'), tags=['gate'])
 
@@ -210,13 +201,11 @@ class TEBD:
         chitemp = min(self.bond_dim, len(stemp))
         left_site.modify(data=utemp[:, range(chitemp)].reshape(left_site.data.shape[0], self.d, chitemp))
         right_site.modify(data=vhtemp[range(chitemp), :].reshape(chitemp, self.d))
-        central_bond = stemp[range(chitemp)] / LA.norm(stemp[range(chitemp)])
-
-        return central_bond
+        central_bond.modify(data=np.diag(stemp[range(chitemp)] / LA.norm(stemp[range(chitemp)])))
 
     def _apply_interior_gate(
-            self, gate: np.array, left_site: qtn.Tensor, right_site: qtn.Tensor, left_bond: np.array,
-            central_bond: np.array, right_bond: np.array, stol=1e-7
+            self, gate: np.array, left_site: qtn.Tensor, right_site: qtn.Tensor, left_bond: qtn.Tensor,
+            central_bond: qtn.Tensor, right_bond: np.array, stol=1e-7
     ) -> np.array:
         """Apply gate to two interior sites.
 
@@ -229,19 +218,19 @@ class TEBD:
             gate: Gate representing time evolution
             stol: Threshold for singular values
 
-        Returns:
-            New bond weights
-
         """
         # ensure singular values are above tolerance threshold
-        left_bond = left_bond * (left_bond > stol) + stol * (left_bond < stol)
-        right_bond = right_bond * (right_bond > stol) + stol * (right_bond < stol)
+        left_bond_data = np.diagonal(left_bond.data)
+        left_bond_data = np.diag(left_bond_data * (left_bond_data > stol) + stol * (left_bond_data < stol))
 
-        left_bond_T = qtn.Tensor(np.diag(left_bond), inds=('f0', 'k1'), tags=['left bond'])
+        right_bond_data = np.diagonal(right_bond.data)
+        right_bond_data = np.diag(right_bond_data * (right_bond_data > stol) + stol * (right_bond_data < stol))
+
+        left_bond_T = qtn.Tensor(left_bond_data, inds=('f0', 'k1'), tags=['left bond'])
         left_site_T = qtn.Tensor(left_site.data, inds=('k1', 'k2', 'k3'), tags=['left site'])
-        central_bond_T = qtn.Tensor(np.diag(central_bond), inds=('k3', 'k4'), tags=['central bond'])
+        central_bond_T = qtn.Tensor(central_bond.data, inds=('k3', 'k4'), tags=['central bond'])
         right_site_T = qtn.Tensor(right_site.data, inds=('k4', 'k5', 'k6'), tags=['right site'])
-        right_bond_T = qtn.Tensor(np.diag(right_bond), inds=('k6', 'f3'), tags=['right bond'])
+        right_bond_T = qtn.Tensor(right_bond_data, inds=('k6', 'f3'), tags=['right bond'])
         gate_T = qtn.Tensor(gate, inds=('f1', 'f2', 'k2', 'k5'), tags=['gate'])
 
         # contract with gate
@@ -258,11 +247,9 @@ class TEBD:
         vhtemp = vhtemp[range(chitemp), :].reshape(chitemp * self.d, right_site.data.shape[2])
 
         # remove environment weights to form new MPS tensors A and B
-        left_site.modify(data=(np.diag(1 / left_bond) @ utemp).reshape(left_site.data.shape[0], self.d, chitemp))
-        right_site.modify(data=(vhtemp @ np.diag(1 / right_bond)).reshape(chitemp, self.d, right_site.data.shape[2]))
-        central_bond = stemp[range(chitemp)] / LA.norm(stemp[range(chitemp)])
-
-        return central_bond
+        left_site.modify(data=(LA.inv(left_bond_data) @ utemp).reshape(left_site.data.shape[0], self.d, chitemp))
+        right_site.modify(data=(vhtemp @ LA.inv(right_bond_data)).reshape(chitemp, self.d, right_site.data.shape[2]))
+        central_bond.modify(data=np.diag(stemp[range(chitemp)] / LA.norm(stemp[range(chitemp)])))
 
     def _gen_gate(self, hamiltonian: np.array, tau: float) -> np.array:
         """Generate gate for given Hamiltonian and time step.
