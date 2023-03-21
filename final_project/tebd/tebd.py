@@ -7,9 +7,9 @@ from numpy import linalg as LA
 import quimb.tensor as qtn
 from scipy.linalg import expm
 
-from hamiltonian import LocalHamiltonian
-from hamiltonian import Hamiltonian
-from matrix_product_states import MatrixProductState
+from tebd.hamiltonian import LocalHamiltonian
+from tebd.hamiltonian import Hamiltonian
+from tebd.matrix_product_states import MatrixProductState
 
 
 class TEBD:
