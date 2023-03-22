@@ -18,6 +18,7 @@ setup(
         "numpy==1.23.5",
         "opt-einsum==3.3.0",
         "quimb==1.4.2",
-        "scipy==1.10.1"
+        "scipy==1.10.1",
+        "tqdm==4.65.0"
     ]
 )

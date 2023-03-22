@@ -1,6 +1,9 @@
 """Run TEBD algorithm given various parameters."""
 
+from typing import Dict
+from typing import List
 from typing import Optional
+from typing import Tuple
 
 import numpy as np
 from numpy import linalg as LA
@@ -272,7 +275,10 @@ class TEBD:
         return expm(-tau * hamiltonian).reshape(self.d, self.d, self.d, self.d)
 
 
-def run_tebd(tebd_obj: TEBD, tau: float, num_iter: int, mid_steps: int, print_to_stdout: Optional[bool] = True):
+def run_tebd(
+        tebd_obj: TEBD, tau: float, num_iter: int, mid_steps: int, observables: Optional[List[str]] = None,
+        print_to_stdout: Optional[bool] = True
+) -> Dict:
     """Run the TEBD algorithm for given number of iterations.
 
     Args:
@@ -280,29 +286,38 @@ def run_tebd(tebd_obj: TEBD, tau: float, num_iter: int, mid_steps: int, print_to
         tau: Timestep
         num_iter: Number of iterations
         mid_steps: Number of steps between each diagnostic
+        observables: List of observables to compute at each midstep
         print_to_stdout: Whether to print diagnostic information to screen
 
+    Returns:
+        Dictionary of observables at each midstep
+
     """
-    energies = []
-    wave_functions = []
+    observables_at_midsteps = {k: [] for k in observables or []}
 
     for k in range(num_iter):
         if np.mod(k, mid_steps) == 0:
-            # compute energy
-            energy = tebd_obj.compute_energy()
-            wave_function = tebd_obj.mps.wave_function()
+            # compute observables
+            if "energy" in observables_at_midsteps:
+                energy = tebd_obj.compute_energy()
+                observables_at_midsteps["energy"].append(energy)
+
+            if "entropy" in observables_at_midsteps:
+                entropy = [tebd_obj.mps.entropy(s) for s in range(1, tebd_obj.N)]
+                observables_at_midsteps["entropy"].append(entropy)
+
+            if "wavefunction" in observables_at_midsteps:
+                wave_function = tebd_obj.mps.wave_function()
+                observables_at_midsteps["wavefunction"].append(wave_function)
 
             if print_to_stdout:
                 print(f"Iteration: {k} of {num_iter}, energy: {energy}")
 
-            energies.append(energy)
-            wave_functions.append(wave_function)
-
         tebd_obj.step(tau)
 
-    wave_functions = np.array(wave_functions)
+    observables_at_midsteps = {k: np.array(v) for k, v in observables_at_midsteps.items()}
 
-    return energies, wave_functions
+    return observables_at_midsteps
 
 
 def run_tebd_ising(
@@ -313,10 +328,12 @@ def run_tebd_ising(
         tau: Optional[float] = 0.01,
         num_iter: Optional[int] = 500,
         mid_steps: Optional[int] = 10,
+        observables: Optional[List[str]] = None,
         print_to_stdout: Optional[bool] = True,
         evol_type: Optional[str] = "imag",
-        st_order: Optional[str] = "ST1"
-):
+        st_order: Optional[str] = "ST1",
+        initial_state: Optional[str] = "random"
+) -> Dict:
     """Run TEBD for the Ising model in transverse field.
 
     Args:
@@ -327,29 +344,34 @@ def run_tebd_ising(
         tau: Timestep
         num_iter: Number of iterations
         mid_steps: Number of steps between each diagnostic
+        observables: List of observables to compute at each midstep
         print_to_stdout: Whether to print diagnostic information to screen
         evol_type: Type of time evolution (e.g., "real" or "imag")
         st_order: Order of Suzuki-Trotter decomposition (i.e., "ST1" or "ST2")
+        initial_state: What to set as the initial state (either "random" or a string of 1s and 0s of length N)
 
     Returns:
-        Energy and wavefunction at each midstep
+        Dictionary of observables at each midstep
 
     """
     d = 2
 
-    MPS = MatrixProductState(d=d, N=N, bond_dim=bond_dim)
+    if initial_state == "random":
+        MPS = MatrixProductState(d=d, N=N, bond_dim=bond_dim)
+    else:
+        MPS = MatrixProductState.init_from_state(initial_state)
 
     # create Hamiltonians
     loc_ham_ising = LocalIsingHamiltonian(N, J, lmda)
     glob_ham_ising = IsingHamiltonian(N, J, lmda)
 
     # create TEBD object
-    tebd_obj = TEBD(MPS, loc_ham_ising, glob_ham_ising, evol_type=evol_type, st_order=st_order)
+    tebd_obj = TEBD(MPS, loc_ham_ising, glob_ham_ising, bond_dim=bond_dim, evol_type=evol_type, st_order=st_order)
 
     # run algorithm
-    energies, wave_functions = run_tebd(tebd_obj, tau, num_iter, mid_steps, print_to_stdout)
+    observables_at_midsteps = run_tebd(tebd_obj, tau, num_iter, mid_steps, observables, print_to_stdout)
 
-    return energies, wave_functions
+    return observables_at_midsteps
 
 
 def run_tebd_heis(
@@ -361,10 +383,12 @@ def run_tebd_heis(
         tau: Optional[float] = 0.01,
         num_iter: Optional[int] = 500,
         mid_steps: Optional[int] = 10,
+        observables: Optional[List[str]] = None,
         print_to_stdout: Optional[bool] = True,
         evol_type: Optional[str] = "imag",
-        st_order: Optional[str] = "ST1"
-):
+        st_order: Optional[str] = "ST1",
+        initial_state: Optional[str] = "random"
+) -> Dict:
     """Run TEBD for the Heisenberg model.
 
     Args:
@@ -376,17 +400,22 @@ def run_tebd_heis(
         tau: Timestep
         num_iter: Number of iterations
         mid_steps: Number of steps between each diagnostic
+        observables: List of observables to compute at each midstep
         print_to_stdout: Whether to print diagnostic information to screen
         evol_type: Type of time evolution (e.g., "real" or "imag")
         st_order: Order of Suzuki-Trotter decomposition (i.e., "ST1" or "ST2")
+        initial_state: What to set as the initial state (either "random" or a string of 1s and 0s of length N)
 
     Returns:
-        Energy and wavefunction at each midstep
+        Dictionary of observables at each midstep
 
     """
     d = 2
 
-    MPS = MatrixProductState(d=d, N=N, bond_dim=bond_dim)
+    if initial_state == "random":
+        MPS = MatrixProductState(d=d, N=N, bond_dim=bond_dim)
+    else:
+        MPS = MatrixProductState.init_from_state(initial_state)
 
     # create Hamiltonians
     loc_ham_heis = LocalHeisenbergHamiltonian(N, j_x, j_y, j_z)
@@ -396,6 +425,6 @@ def run_tebd_heis(
     tebd_obj = TEBD(MPS, loc_ham_heis, glob_ham_heis, evol_type=evol_type, st_order=st_order)
 
     # run algorithm
-    energies, wave_functions = run_tebd(tebd_obj, tau, num_iter, mid_steps, print_to_stdout)
+    observables_at_midsteps = run_tebd(tebd_obj, tau, num_iter, mid_steps, observables, print_to_stdout)
 
-    return energies, wave_functions
+    return observables_at_midsteps

@@ -4,6 +4,7 @@ from typing import List
 from typing import Optional
 
 import numpy as np
+from numpy import linalg as LA
 import quimb.tensor as qtn
 
 
@@ -105,6 +106,46 @@ class MatrixProductState:
             rho_tensors.append(ten.copy())
 
         return qtn.TensorNetwork(rho_tensors)
+
+    def entropy(self, site: int) -> float:
+        """Get entropy between sites to the left of and including given site, and rest of system.
+
+        Args:
+            site: End of left bipartition to get entropy for (starts at 1)
+
+        Returns:
+            Entropy
+
+        """
+        density_matrix = self.rho()
+
+        # identify legs to contract in density matrix
+        for i in range(site):
+            ten = density_matrix.tensors[2 * i]
+
+            new_inds = ()
+            for ind in ten.inds:
+                if ind.startswith("k"):
+                    new_inds += (f"k{i}",)
+                else:
+                    new_inds += (ind,)
+
+            density_matrix.tensors[2 * i].modify(inds=new_inds)
+
+        reduced_density_matrix = density_matrix ^ ...
+
+        if isinstance(reduced_density_matrix, float):
+            # all indices have been contracted, so density matrix is just a number
+            reduced_density_matrix = [[reduced_density_matrix]]
+        else:
+            # merge indices
+            n_reduced = self.d ** (self.N - site)
+            reduced_density_matrix = reduced_density_matrix.data.reshape(n_reduced, n_reduced)
+
+        # get eigenvalues
+        eigenvalues, _ = LA.eigh(reduced_density_matrix)
+
+        return -sum(w * np.log(w) for w in eigenvalues if w > 0)
 
     def norm(self):
         """Get the norm of the MPS."""
