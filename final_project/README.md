@@ -17,15 +17,15 @@ pip install -e .
 
 The time evolution step is given by the following tensor network:
 
-![image](figures/apply_gate_step.png)
+![image](diagrams/apply_gate_step.png)
 
 This contracted tensor network represents the local density matrix:
 
-![image](figures/local_density_matrix.png)
+![image](diagrams/local_density_matrix.png)
 
 The average energy of two sites is:
 
-![image](figures/average_energy.png)
+![image](diagrams/average_energy.png)
 
 ## Results
 
@@ -33,4 +33,4 @@ The TEBD algorithm was run for 500 iterations using a timestep of 0.01 for vario
 The initial wavefunction was randomized. Below is a plot of the ground state energy as a function of $N$ for the case
 of $\lambda = 0$.
 
-![image](figures/ground_state_energy_lambda_0.png)
+![image](figures/energy_vs_N_lambda_0.png)
