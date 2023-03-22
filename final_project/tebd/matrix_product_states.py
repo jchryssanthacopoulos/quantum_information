@@ -155,7 +155,16 @@ class MatrixProductState:
 
     def normalize(self):
         """Normalize the MPS."""
-        self.data[0].modify(data=self.data[0].data / np.sqrt(self.norm()))
+        self.multiply(1 / np.sqrt(self.norm()))
+
+    def multiply(self, fac: float):
+        """Multiply MPS by given factor.
+
+        Args:
+            fac: Factor to multiply by
+
+        """
+        self.data[0].modify(data=self.data[0].data * fac)
 
     def get_state(self, idx: int) -> qtn.Tensor:
         """Get state for site given by index.
