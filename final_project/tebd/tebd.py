@@ -8,7 +8,11 @@ import quimb.tensor as qtn
 from scipy.linalg import expm
 
 from tebd.hamiltonian import LocalHamiltonian
+from tebd.hamiltonian import LocalHeisenbergHamiltonian
+from tebd.hamiltonian import LocalIsingHamiltonian
 from tebd.hamiltonian import Hamiltonian
+from tebd.hamiltonian import HeisenbergHamiltonian
+from tebd.hamiltonian import IsingHamiltonian
 from tebd.matrix_product_states import MatrixProductState
 
 
@@ -283,7 +287,7 @@ def run_tebd(tebd_obj: TEBD, tau: float, num_iter: int, mid_steps: int, print_to
     wave_functions = []
 
     for k in range(num_iter):
-        if np.mod(k, mid_steps) == 0 or k == num_iter:
+        if np.mod(k, mid_steps) == 0:
             # compute energy
             energy = tebd_obj.compute_energy()
             wave_function = tebd_obj.mps.wave_function()
@@ -297,5 +301,101 @@ def run_tebd(tebd_obj: TEBD, tau: float, num_iter: int, mid_steps: int, print_to
         tebd_obj.step(tau)
 
     wave_functions = np.array(wave_functions)
+
+    return energies, wave_functions
+
+
+def run_tebd_ising(
+        N: int,
+        bond_dim: Optional[int] = 2,
+        J: Optional[float] = 1.0,
+        lmda: Optional[float] = 0.0,
+        tau: Optional[float] = 0.01,
+        num_iter: Optional[int] = 500,
+        mid_steps: Optional[int] = 10,
+        print_to_stdout: Optional[bool] = True,
+        evol_type: Optional[str] = "imag",
+        st_order: Optional[str] = "ST1"
+):
+    """Run TEBD for the Ising model in transverse field.
+
+    Args:
+        N: Number of sites
+        bond_dim: Bond dimension
+        J: Nearest neighbor coupling
+        lmda: Coupling to external field
+        tau: Timestep
+        num_iter: Number of iterations
+        mid_steps: Number of steps between each diagnostic
+        print_to_stdout: Whether to print diagnostic information to screen
+        evol_type: Type of time evolution (e.g., "real" or "imag")
+        st_order: Order of Suzuki-Trotter decomposition (i.e., "ST1" or "ST2")
+
+    Returns:
+        Energy and wavefunction at each midstep
+
+    """
+    d = 2
+
+    MPS = MatrixProductState(d=d, N=N, bond_dim=bond_dim)
+
+    # create Hamiltonians
+    loc_ham_ising = LocalIsingHamiltonian(N, J, lmda)
+    glob_ham_ising = IsingHamiltonian(N, J, lmda)
+
+    # create TEBD object
+    tebd_obj = TEBD(MPS, loc_ham_ising, glob_ham_ising, evol_type=evol_type, st_order=st_order)
+
+    # run algorithm
+    energies, wave_functions = run_tebd(tebd_obj, tau, num_iter, mid_steps, print_to_stdout)
+
+    return energies, wave_functions
+
+
+def run_tebd_heis(
+        N: int,
+        bond_dim: Optional[int] = 2,
+        j_x: Optional[float] = 1.0,
+        j_y: Optional[float] = 1.0,
+        j_z: Optional[float] = 1.0,
+        tau: Optional[float] = 0.01,
+        num_iter: Optional[int] = 500,
+        mid_steps: Optional[int] = 10,
+        print_to_stdout: Optional[bool] = True,
+        evol_type: Optional[str] = "imag",
+        st_order: Optional[str] = "ST1"
+):
+    """Run TEBD for the Heisenberg model.
+
+    Args:
+        N: Number of sites
+        bond_dim: Bond dimension
+        j_x: Nearest neighbor coupling in x direction
+        j_y: Nearest neighbor coupling in y direction
+        j_z: Nearest neighbor coupling in z direction
+        tau: Timestep
+        num_iter: Number of iterations
+        mid_steps: Number of steps between each diagnostic
+        print_to_stdout: Whether to print diagnostic information to screen
+        evol_type: Type of time evolution (e.g., "real" or "imag")
+        st_order: Order of Suzuki-Trotter decomposition (i.e., "ST1" or "ST2")
+
+    Returns:
+        Energy and wavefunction at each midstep
+
+    """
+    d = 2
+
+    MPS = MatrixProductState(d=d, N=N, bond_dim=bond_dim)
+
+    # create Hamiltonians
+    loc_ham_heis = LocalHeisenbergHamiltonian(N, j_x, j_y, j_z)
+    glob_ham_heis = HeisenbergHamiltonian(N, j_x, j_y, j_z)
+
+    # create TEBD object
+    tebd_obj = TEBD(MPS, loc_ham_heis, glob_ham_heis, evol_type=evol_type, st_order=st_order)
+
+    # run algorithm
+    energies, wave_functions = run_tebd(tebd_obj, tau, num_iter, mid_steps, print_to_stdout)
 
     return energies, wave_functions
