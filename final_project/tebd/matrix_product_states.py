@@ -4,6 +4,8 @@ from typing import List
 from typing import Optional
 
 import numpy as np
+from numpy import linalg as LA
+import quimb as qu
 import quimb.tensor as qtn
 
 
@@ -106,6 +108,69 @@ class MatrixProductState:
 
         return qtn.TensorNetwork(rho_tensors)
 
+    def entropy(self, site: int) -> float:
+        """Get entropy between sites to the left of and including given site, and rest of system.
+
+        Args:
+            site: End of left bipartition to get entropy for (starts at 1)
+
+        Returns:
+            Entropy
+
+        """
+        density_matrix = self.rho()
+
+        # identify legs to contract in density matrix
+        for i in range(site):
+            ten = density_matrix.tensors[2 * i]
+
+            new_inds = ()
+            for ind in ten.inds:
+                if ind.startswith("k"):
+                    new_inds += (f"k{i}",)
+                else:
+                    new_inds += (ind,)
+
+            density_matrix.tensors[2 * i].modify(inds=new_inds)
+
+        reduced_density_matrix = density_matrix ^ ...
+
+        if isinstance(reduced_density_matrix, float):
+            # all indices have been contracted, so density matrix is just a number
+            reduced_density_matrix = [[reduced_density_matrix]]
+        else:
+            # merge indices
+            n_reduced = self.d ** (self.N - site)
+            reduced_density_matrix = reduced_density_matrix.data.reshape(n_reduced, n_reduced)
+
+        # get eigenvalues
+        eigenvalues, _ = LA.eigh(reduced_density_matrix)
+
+        return -sum(w * np.log(w) for w in eigenvalues if w > 0)
+
+    def magnetization(self, site: int) -> float:
+        """Get Z magnetization for given site.
+
+        Args:
+            site: Site to get magnetization of (starts at 1)
+
+        Returns:
+            Magnetization
+
+        """
+        if self.d != 2:
+            raise Exception("Can only get magnetization for qubit states")
+
+        I1 = np.eye(2 ** (site - 1))
+        prod1 = np.kron(I1, qu.pauli("Z"))
+        I2 = np.eye(2 ** (self.N - site))
+        Z = np.kron(prod1, I2)
+
+        psi = self.wave_function().reshape(len(Z), 1)
+        z_ave = psi.conj().T @ Z @ psi
+
+        return np.real(z_ave[0][0])
+
     def norm(self):
         """Get the norm of the MPS."""
         tn = qtn.TensorNetwork(self.data)
@@ -114,7 +179,16 @@ class MatrixProductState:
 
     def normalize(self):
         """Normalize the MPS."""
-        self.data[0].modify(data=self.data[0].data / np.sqrt(self.norm()))
+        self.multiply(1 / np.sqrt(self.norm()))
+
+    def multiply(self, fac: float):
+        """Multiply MPS by given factor.
+
+        Args:
+            fac: Factor to multiply by
+
+        """
+        self.data[0].modify(data=self.data[0].data * fac)
 
     def get_state(self, idx: int) -> qtn.Tensor:
         """Get state for site given by index.
