@@ -5,6 +5,7 @@ from typing import Optional
 import numpy as np
 from numpy import linalg as LA
 import quimb.tensor as qtn
+import quimb as qu
 from scipy.linalg import expm
 
 from tebd.hamiltonian import LocalHamiltonian
@@ -73,7 +74,7 @@ class TEBD:
         self.sbonds = [np.ones(self.mps.bond_dim) / np.sqrt(self.mps.bond_dim)] * (self.N - 1)
 
     def step(self, tau: float):
-        """Run one step of TEBD.
+        """Run one step of 
 
         Args:
             tau: Time step
@@ -135,6 +136,36 @@ class TEBD:
 
         # renormalize
         self.mps.normalize()
+    
+    def compute_magnetization(self):
+        dim = 2 ** self.N
+
+        M_0 = np.zeros((dim, dim), dtype='complex128')
+
+        def identity(n):
+            return(np.eye(2 ** n))
+        
+        for i in range(self.N):
+            I1 = identity(i)
+            I2 = identity(self.N - i - 1)
+            prod1 = np.kron(I1, qu.pauli("Z"))
+            M_0 += np.kron(prod1, I2)
+
+        M_0 = M_0.reshape((self.d,) * 2 * self.N)
+        
+        
+        M = (1/self.N)*M_0
+        
+        inds = tuple([f'k{i}' for i in range(2 * self.N)])
+        M_op = qtn.Tensor(M, inds=inds, tags=['magn'])
+        rho = self.mps.rho()
+        rhoC = rho ^ ...
+        rho_tensor = qtn.Tensor(rhoC.data, inds=inds, tags=['rho'])
+        M_tensor = M_op & rho_tensor
+        M = M_tensor ^ ...
+        
+        return M
+
 
     def compute_energy(self) -> float:
         """Compute energy of the MPS.
@@ -310,7 +341,7 @@ class TEBD:
         return expm(-tau * hamiltonian).reshape(self.d, self.d, self.d, self.d)
 
 
-def run_tebd(tebd_obj: TEBD, tau: float, num_iter: int, mid_steps: int, print_to_stdout: Optional[bool] = True):
+def run_tebd(tebd_obj: TEBD, tau: float, num_iter: int, mid_steps: int, print_to_stdout: Optional[bool] = False):
     """Run the TEBD algorithm for given number of iterations.
 
     Args:
@@ -323,11 +354,13 @@ def run_tebd(tebd_obj: TEBD, tau: float, num_iter: int, mid_steps: int, print_to
     """
     energies = []
     wave_functions = []
+    magns = []
 
     for k in range(num_iter):
         if np.mod(k, mid_steps) == 0:
             # compute energy
             energy = tebd_obj.compute_energy()
+            magn = tebd_obj.compute_magnetization()
             wave_function = tebd_obj.mps.wave_function()
 
             if print_to_stdout:
@@ -335,12 +368,13 @@ def run_tebd(tebd_obj: TEBD, tau: float, num_iter: int, mid_steps: int, print_to
 
             energies.append(energy)
             wave_functions.append(wave_function)
+            magns.append(magn)
 
         tebd_obj.step(tau)
 
     wave_functions = np.array(wave_functions)
 
-    return energies, wave_functions
+    return energies, magns,  wave_functions
 
 
 def run_tebd_ising(
