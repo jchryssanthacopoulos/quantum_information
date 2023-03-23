@@ -131,10 +131,12 @@ class TEBD:
                     observables_at_midsteps["entropy"].append(entropy)
 
                 if "wavefunction" in observables_at_midsteps:
-                    wave_function = self.mps.wave_function()
-                    observables_at_midsteps["wavefunction"].append(wave_function)
+                    observables_at_midsteps["wavefunction"].append(self.mps.wave_function())
 
-                if print_to_stdout:
+                if "magnetization" in observables_at_midsteps:
+                    observables_at_midsteps["magnetization"].append(self.mps.magnetization(1))
+
+                if print_to_stdout and "energy" in observables_at_midsteps:
                     print(f"Iteration: {k} of {num_iter}, energy: {energy}")
 
             self.step(tau)

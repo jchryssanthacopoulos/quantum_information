@@ -5,6 +5,7 @@ from typing import Optional
 
 import numpy as np
 from numpy import linalg as LA
+import quimb as qu
 import quimb.tensor as qtn
 
 
@@ -146,6 +147,29 @@ class MatrixProductState:
         eigenvalues, _ = LA.eigh(reduced_density_matrix)
 
         return -sum(w * np.log(w) for w in eigenvalues if w > 0)
+
+    def magnetization(self, site: int) -> float:
+        """Get Z magnetization for given site.
+
+        Args:
+            site: Site to get magnetization of (starts at 1)
+
+        Returns:
+            Magnetization
+
+        """
+        if self.d != 2:
+            raise Exception("Can only get magnetization for qubit states")
+
+        I1 = np.eye(2 ** (site - 1))
+        prod1 = np.kron(I1, qu.pauli("Z"))
+        I2 = np.eye(2 ** (self.N - site))
+        Z = np.kron(prod1, I2)
+
+        psi = self.wave_function().reshape(len(Z), 1)
+        z_ave = psi.conj().T @ Z @ psi
+
+        return np.real(z_ave[0][0])
 
     def norm(self):
         """Get the norm of the MPS."""
