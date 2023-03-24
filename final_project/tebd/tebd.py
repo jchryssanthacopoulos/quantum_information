@@ -331,7 +331,8 @@ def run_tebd(
         print_to_stdout: Optional[bool] = True,
         evol_type: Optional[str] = "imag",
         st_order: Optional[str] = "ST1",
-        initial_state: Optional[str] = "random"
+        initial_state: Optional[str] = "random",
+        rng_seed: Optional[int] = 0
 ) -> Dict:
     """Run TEBD for provided model.
 
@@ -348,6 +349,7 @@ def run_tebd(
         evol_type: Type of time evolution (e.g., "real" or "imag")
         st_order: Order of Suzuki-Trotter decomposition (i.e., "ST1" or "ST2")
         initial_state: What to set as the initial state (either "random" or a string of 1s and 0s of length N)
+        rng_seed: Number to seed random number generator
 
     Returns:
         Dictionary of observables at each midstep
@@ -356,7 +358,7 @@ def run_tebd(
     d = 2
 
     if initial_state == "random":
-        MPS = MatrixProductState(d=d, N=N, bond_dim=bond_dim)
+        MPS = MatrixProductState(d=d, N=N, bond_dim=bond_dim, rng_seed=rng_seed)
     else:
         MPS = MatrixProductState.init_from_state(initial_state)
 
@@ -367,6 +369,8 @@ def run_tebd(
     elif model == "heisenberg":
         loc_ham = LocalHeisenbergHamiltonian(N=N, **model_params)
         glob_ham = HeisenbergHamiltonian(N=N, **model_params)
+    else:
+        raise Exception(f"Model {model} not supported")
 
     # create TEBD object
     tebd_obj = TEBD(MPS, loc_ham, glob_ham, bond_dim=bond_dim, evol_type=evol_type, st_order=st_order)

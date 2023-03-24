@@ -12,7 +12,9 @@ import quimb.tensor as qtn
 class MatrixProductState:
     """Class representing a matrix product state with given number of states."""
 
-    def __init__(self, d: int, N: int, bond_dim: int, states: Optional[List[np.array]] = None):
+    def __init__(
+            self, d: int, N: int, bond_dim: int, states: Optional[List[np.array]] = None, rng_seed: Optional[int] = 0
+    ):
         """Initialize the MPS.
 
         Args:
@@ -20,6 +22,7 @@ class MatrixProductState:
             N: Number of states
             bond_dim: Bond dimension between states
             states: Optional states to initialize with
+            rng_seed: Number to seed random number generator
 
         """
         self.d = d
@@ -27,35 +30,33 @@ class MatrixProductState:
         self.bond_dim = bond_dim
 
         self.data = []
-        self.singular_values = []
 
         if not states:
+            np.random.seed(rng_seed)
+
             states = []
             states.append(np.random.rand(d, bond_dim))
+
             for i in range(1, N - 1):
                 states.append(np.random.rand(bond_dim, d, bond_dim))
+
             states.append(np.random.rand(bond_dim, d))
 
         # create left-most state
         self.data.append(qtn.Tensor(states[0], inds=("k0", "i0"), tags=["state 1"]))
 
         for i in range(1, N - 1):
-            self.singular_values.append(np.eye(bond_dim, bond_dim))
-
             self.data.append(
-                qtn.Tensor(self.singular_values[-1], inds=(f"i{2 * (i - 1)}", f"i{2 * i - 1}"), tags=[f"SV {i}"])
+                qtn.Tensor(np.eye(bond_dim, bond_dim), inds=(f"i{2 * (i - 1)}", f"i{2 * i - 1}"), tags=[f"SV {i}"])
+            )
+            self.data.append(
+                qtn.Tensor(states[i], inds=(f"i{2 * i - 1}", f"k{i}", f"i{2 * i}"), tags=[f"state {i + 1}"])
             )
 
-            self.data.append(
-                qtn.Tensor(states[i], inds=(f"i{2 * i - 1}", f"k{i}", f"i{2 * i}"), tags=[f"state {i + 1}"]))
-
         # create right-most state
-        self.singular_values.append(np.eye(bond_dim, bond_dim))
-
         self.data.append(
-            qtn.Tensor(self.singular_values[-1], inds=(f"i{2 * (N - 2)}", f"i{2 * N - 3}"), tags=[f"SV {N - 1}"])
+            qtn.Tensor(np.eye(bond_dim, bond_dim), inds=(f"i{2 * (N - 2)}", f"i{2 * N - 3}"), tags=[f"SV {N - 1}"])
         )
-
         self.data.append(qtn.Tensor(states[N - 1], inds=(f"i{2 * N - 3}", f"k{N - 1}"), tags=[f"state {N}"]))
 
         self.normalize()
