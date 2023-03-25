@@ -29,7 +29,7 @@ class TEBD:
 
     def __init__(
             self, mps: MatrixProductState, local_H: LocalHamiltonian, global_H: Hamiltonian, evol_type: str,
-            bond_dim: Optional[int] = None, st_order: str = None
+            bond_dim: Optional[int] = None, st_order: Optional[str] = None, canonize: Optional[bool] = False
     ):
         """Initialize TEBD algorithm with states and Hamiltonian.
 
@@ -39,6 +39,7 @@ class TEBD:
             evol_type: Type of time evolution (e.g., "real" or "imag")
             bond_dim: Bond dimension to use when updating (if not set, use bond_dim from the underlying MPS)
             st_order: Order of Suzuki-Trotter decomposition (i.e., "ST1" or "ST2")
+            canonize: Whether to canonize the MPS on each iteration
 
         """
         if evol_type not in [self.REAL_TIME_EVOLUTION, self.IMAG_TIME_EVOLUTION]:
@@ -60,6 +61,7 @@ class TEBD:
         self.global_H = global_H
         self.evol_type = evol_type
         self.st_order = st_order
+        self.canonize = canonize
 
         self.d = mps.d
         self.N = mps.N
@@ -175,6 +177,10 @@ class TEBD:
         """
         two_site_gate = self._gen_gate(self.local_H.hamiltonians[gate_idx], tau)
 
+        # canonize at given gate index
+        if self.canonize:
+            self.mps.canonize(gate_idx)
+
         if gate_idx == 0:
             # apply left-most gate
             self._apply_left_gate(
@@ -197,6 +203,8 @@ class TEBD:
             self.mps.get_sv(gate_idx),
             self.mps.get_sv(gate_idx + 1)
         )
+
+        self.mps.normalize()
 
     def _apply_left_gate(self, left_site: qtn.Tensor, right_site: qtn.Tensor, central_bond: qtn.Tensor, gate: np.array):
         """Apply gate to left-most sites.
@@ -331,6 +339,7 @@ def run_tebd(
         print_to_stdout: Optional[bool] = True,
         evol_type: Optional[str] = "imag",
         st_order: Optional[str] = "ST1",
+        canonize: Optional[bool] = False,
         initial_state: Optional[str] = "random",
         rng_seed: Optional[int] = 0
 ) -> Dict:
@@ -348,6 +357,7 @@ def run_tebd(
         print_to_stdout: Whether to print diagnostic information to screen
         evol_type: Type of time evolution (e.g., "real" or "imag")
         st_order: Order of Suzuki-Trotter decomposition (i.e., "ST1" or "ST2")
+        canonize: Whether to canonize the MPS on each iteration
         initial_state: What to set as the initial state (either "random" or a string of 1s and 0s of length N)
         rng_seed: Number to seed random number generator
 
@@ -373,7 +383,9 @@ def run_tebd(
         raise Exception(f"Model {model} not supported")
 
     # create TEBD object
-    tebd_obj = TEBD(MPS, loc_ham, glob_ham, bond_dim=bond_dim, evol_type=evol_type, st_order=st_order)
+    tebd_obj = TEBD(
+        MPS, loc_ham, glob_ham, bond_dim=bond_dim, evol_type=evol_type, st_order=st_order, canonize=canonize
+    )
 
     # run algorithm
     observables_at_midsteps = tebd_obj.sweep(tau, num_iter, mid_steps, observables, print_to_stdout)

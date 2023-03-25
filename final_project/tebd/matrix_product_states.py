@@ -109,6 +109,91 @@ class MatrixProductState:
 
         return qtn.TensorNetwork(rho_tensors)
 
+    def canonize(self, link_index: int):
+        """Canonize the MPS in-place at the given link.
+
+        Args:
+            link_index: Link index starting at 0
+
+        """
+        rhoL = self.reduced_rho(link_index, "left")
+        rhoR = self.reduced_rho(link_index, "right")
+
+        # diagonalize left and right density matrices
+        dL, uL = LA.eigh(rhoL)
+        sq_dL = np.sqrt(abs(dL))
+        dR, uR = LA.eigh(rhoR)
+        sq_dR = np.sqrt(abs(dR))
+
+        XL = uL @ np.diag(sq_dL) @ uL.T
+        XLinv = uL @ np.diag(1 / sq_dL) @ uL.T
+        XR = uR @ np.diag(sq_dR) @ uR.T
+        XRinv = uR @ np.diag(1 / sq_dR) @ uR.T
+
+        SigAB = self.get_sv(link_index).data
+        utemp, SigABp, vhtemp = LA.svd(XL @ SigAB @ XR)
+
+        # get singular values for reference
+        H = qtn.TensorNetwork(self.data) ^ ...
+        H = H.data.reshape(self.d ** (link_index + 1), self.d ** (self.N - link_index - 1))
+        _, svalues, _ = LA.svd(H, full_matrices=False)
+
+        # update singular values
+        self.update_sv(link_index, np.diag(SigABp))
+
+        # update left state
+        left_state = self.get_state(link_index)
+        U_tensor = qtn.Tensor(XLinv * utemp, inds=(left_state.inds[-1], "left_new"))
+        new_left_tensor = (left_state & U_tensor) ^ ...
+        self.update_state(link_index, new_left_tensor.data)
+
+        # update right state
+        right_state = self.get_state(link_index + 1)
+        V_tensor = qtn.Tensor(vhtemp * XRinv, inds=("right_new", right_state.inds[0]))
+        new_right_tensor = (V_tensor & right_state) ^ ...
+        self.update_state(link_index + 1, new_right_tensor.data)
+
+        n = min(len(svalues), len(SigABp))
+        Serr = LA.norm(svalues[:n] - SigABp[:n])
+        # print(f"Serr = {Serr}")
+
+    def reduced_rho(self, link_index: int, direction: str) -> np.array:
+        """Get reduced density matrix in given direction relative to given link.
+
+        Args:
+            link_index: Link index relative to which to get left reduced density matrix (starts at 0)
+            direction: Left or right
+
+        Returns:
+            Reduced density matrix
+
+        """
+        if direction == "left":
+            data = self.data[:(2 * link_index + 1)]
+        elif direction == "right":
+            data = self.data[(2 * link_index + 2):]
+        else:
+            raise Exception(f"Unrecognized direction {direction}")
+
+        i_max = self._get_max_internal_index(data)
+
+        rho_tensors = []
+
+        for ten in data:
+            new_inds = ()
+            for i in ten.inds:
+                if i.startswith("i"):
+                    new_inds += (f"i{int(i[1:]) + i_max + 1}",)
+                else:
+                    new_inds += (i,)
+            rho_tensors.append(ten.copy())
+            rho_tensors.append(qtn.Tensor(ten.data.conj(), inds=new_inds))
+
+        tn = qtn.TensorNetwork(rho_tensors)
+        tnc = tn ^ ...
+
+        return tnc.data
+
     def entropy(self, site: int) -> float:
         """Get entropy between sites to the left of and including given site, and rest of system.
 
@@ -203,6 +288,16 @@ class MatrixProductState:
         """
         return self.data[2 * idx]
 
+    def update_state(self, idx: int, data: np.array):
+        """Update state with given data.
+
+        Args:
+            idx: Index of state
+            data: Data to update with
+
+        """
+        self.get_state(idx).modify(data=data)
+
     def get_sv(self, idx: int) -> qtn.Tensor:
         """Get singular values for given index.
 
@@ -214,6 +309,16 @@ class MatrixProductState:
 
         """
         return self.data[2 * idx + 1]
+
+    def update_sv(self, idx: int, data: np.array):
+        """Update singular values with given data.
+
+        Args:
+            idx: Index of singular values
+            data: Data to update with
+
+        """
+        self.get_sv(idx).modify(data=data)
 
     def _update_indices(self, inds):
         """Update the given indices to correspond to new internal and external legs.
@@ -232,3 +337,21 @@ class MatrixProductState:
             if i.startswith("i"):
                 new_inds += (f"i{int(i[1:]) + 2 * (self.N - 1)}",)
         return new_inds
+
+    def _get_max_internal_index(self, data: List[qtn.Tensor]) -> int:
+        """Get maximum internal index for given set of tenors.
+
+        Args:
+            data: Tensors to get maximum internal index of
+
+        Returns:
+            Maximum internal index
+
+        """
+        max_internal_inds = []
+
+        for d in data:
+            max_ind = max(int(ind[1:]) for ind in d.inds if ind.startswith("i"))
+            max_internal_inds.append(max_ind)
+
+        return max(max_internal_inds)
