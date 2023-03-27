@@ -26,6 +26,7 @@ class TEBD:
 
     ST_ORDER_1 = "ST1"
     ST_ORDER_2 = "ST2"
+    ST_ORDER_4 = "ST4"
 
     def __init__(
             self, mps: MatrixProductState, local_H: LocalHamiltonian, global_H: Hamiltonian, evol_type: str,
@@ -38,7 +39,7 @@ class TEBD:
             H: Hamiltonian object
             evol_type: Type of time evolution (e.g., "real" or "imag")
             bond_dim: Bond dimension to use when updating (if not set, use bond_dim from the underlying MPS)
-            st_order: Order of Suzuki-Trotter decomposition (i.e., "ST1" or "ST2")
+            st_order: Order of Suzuki-Trotter decomposition (i.e., "ST1", "ST2", "ST4")
 
         """
         if evol_type not in [self.REAL_TIME_EVOLUTION, self.IMAG_TIME_EVOLUTION]:
@@ -46,7 +47,7 @@ class TEBD:
 
         if not st_order:
             st_order = self.ST_ORDER_1
-        elif st_order not in [self.ST_ORDER_1, self.ST_ORDER_2]:
+        elif st_order not in [self.ST_ORDER_1, self.ST_ORDER_2, self.ST_ORDER_4]:
             raise Exception(f"Suzuki-Trotter order {st_order} not supported")
 
         if mps.d != local_H.d:
@@ -96,6 +97,40 @@ class TEBD:
 
             for idx in odd_gate_nums:
                 self._apply_gate(idx, tau / 2)
+        elif self.st_order == self.ST_ORDER_4:
+            tau_1 = (1 / (4 - 4 ** (1 / 3))) * tau
+            tau_2 = (1 - 4 * tau_1) * tau
+            odd_gate_nums = range(0, self.N - 1, 2)
+            even_gate_nums = range(1, self.N - 1, 2)
+
+            for i in range(0, 2):
+                for idx in odd_gate_nums:
+                    self._apply_gate(idx, tau_1 / 2)
+
+                for idx in even_gate_nums:
+                    self._apply_gate(idx, tau_1)
+
+                for idx in odd_gate_nums:
+                    self._apply_gate(idx, tau_1 / 2)
+
+            for idx in odd_gate_nums:
+                self._apply_gate(idx, tau_2 / 2)
+
+            for idx in even_gate_nums:
+                self._apply_gate(idx, tau_2)
+
+            for idx in odd_gate_nums:
+                self._apply_gate(idx, tau_2 / 2)
+
+            for i in range(0, 2):
+                for idx in odd_gate_nums:
+                    self._apply_gate(idx, tau_1 / 2)
+
+                for idx in even_gate_nums:
+                    self._apply_gate(idx, tau_1)
+
+                for idx in odd_gate_nums:
+                    self._apply_gate(idx, tau_1 / 2)
 
         # renormalize
         self.mps.normalize()
@@ -119,6 +154,8 @@ class TEBD:
         """
         observables_at_midsteps = {k: [] for k in observables or []}
 
+        directions = ["x", "y", "z"]
+
         for k in range(num_iter):
             if np.mod(k, mid_steps) == 0:
                 # compute observables
@@ -133,8 +170,10 @@ class TEBD:
                 if "wavefunction" in observables_at_midsteps:
                     observables_at_midsteps["wavefunction"].append(self.mps.wave_function())
 
-                if "magnetization" in observables_at_midsteps:
-                    observables_at_midsteps["magnetization"].append(self.mps.magnetization(1))
+                for direction in directions:
+                    if f"{direction} magnetization" in observables_at_midsteps:
+                        magnetization = [self.mps.magnetization(n, direction) for n in range(1, self.N + 1)]
+                        observables_at_midsteps[f"{direction} magnetization"].append(magnetization)
 
                 if print_to_stdout and "energy" in observables_at_midsteps:
                     print(f"Iteration: {k} of {num_iter}, energy: {energy}")

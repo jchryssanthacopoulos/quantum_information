@@ -149,11 +149,12 @@ class MatrixProductState:
 
         return -sum(w * np.log(w) for w in eigenvalues if w > 0)
 
-    def magnetization(self, site: int) -> float:
-        """Get Z magnetization for given site.
+    def magnetization(self, site: int, direction: str) -> float:
+        """Get magnetization in given direction for given site.
 
         Args:
             site: Site to get magnetization of (starts at 1)
+            direction: Which direction to get the magnetization with respect to
 
         Returns:
             Magnetization
@@ -163,14 +164,14 @@ class MatrixProductState:
             raise Exception("Can only get magnetization for qubit states")
 
         I1 = np.eye(2 ** (site - 1))
-        prod1 = np.kron(I1, qu.pauli("Z"))
+        prod1 = np.kron(I1, qu.pauli(direction))
         I2 = np.eye(2 ** (self.N - site))
-        Z = np.kron(prod1, I2)
+        M = np.kron(prod1, I2)
 
-        psi = self.wave_function().reshape(len(Z), 1)
-        z_ave = psi.conj().T @ Z @ psi
+        psi = self.wave_function().reshape(len(M), 1)
+        m_ave = psi.conj().T @ M @ psi
 
-        return np.real(z_ave[0][0])
+        return np.real(m_ave[0][0])
 
     def norm(self):
         """Get the norm of the MPS."""
