@@ -71,23 +71,40 @@ class MatrixProductState:
             MPS corresponding to state
 
         """
-        array_map = {
-            "0": np.array([1.0, 0.0]),
-            "1": np.array([0.0, 1.0])
-        }
+        if state_str == 'ghz':
+            states = []
+            chi = 2
+            N = 10#int(input('Please give number of sites N (integer):'))
+            v_l = 1/np.sqrt(2)*np.array([1.0, 1.0]).reshape(-1, 1)
+            v_r = np.array([1.0, 1.0]).reshape(1, -1)
+            
+            states.append(v_l)
 
-        N = len(state_str)
+            for i in range(N-2):
+                states.append(np.array([[[1., 0.],
+                        [0., 0.]],
+                       [[0., 0.],
+                        [0., 1.]]]))
+            states.append(v_r)
+        else:
+            chi = 1
+            array_map = {
+                "0": np.array([1.0, 0.0]),
+                "1": np.array([0.0, 1.0])
+            }
+    
+            N = len(state_str)
+    
+            states = []
+            for idx, state in enumerate(state_str):
+                if idx == 0:
+                    states.append(array_map[state].reshape(-1, 1))
+                elif idx == N - 1:
+                    states.append(array_map[state].reshape(1, -1))
+                else:
+                    states.append(array_map[state].reshape(1, -1, 1))
 
-        states = []
-        for idx, state in enumerate(state_str):
-            if idx == 0:
-                states.append(array_map[state].reshape(-1, 1))
-            elif idx == N - 1:
-                states.append(array_map[state].reshape(1, -1))
-            else:
-                states.append(array_map[state].reshape(1, -1, 1))
-
-        return MatrixProductState(d=2, N=N, bond_dim=1, states=states)
+        return MatrixProductState(d=2, N=N, bond_dim=chi, states=states)
 
     def wave_function(self):
         """Return wavefunction corresponding to MPS."""

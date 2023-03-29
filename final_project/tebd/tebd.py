@@ -86,6 +86,7 @@ class TEBD:
             # apply all gates successively for the same time
             for gate_idx in range(self.N - 1):
                 self._apply_gate(gate_idx, tau)
+                
         elif self.st_order == self.ST_ORDER_2:
             # apply odd gates for tau / 2, then even for tau, then odd again for tau / 2
             odd_gate_nums = range(0, self.N - 1, 2)
@@ -208,7 +209,7 @@ class TEBD:
                 if print_to_stdout and "energy" in observables_at_midsteps:
                     print(f"Iteration: {k} of {num_iter}, energy: {energy}")
 
-            self.step(tau)
+            self.step(tau)            
 
         observables_at_midsteps = {k: np.array(v) for k, v in observables_at_midsteps.items()}
 
