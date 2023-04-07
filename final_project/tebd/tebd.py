@@ -336,7 +336,7 @@ class TEBD:
         utemp = utemp[:, range(chitemp)].reshape(left_site.data.shape[0], self.d * chitemp)
         vhtemp = vhtemp[range(chitemp), :].reshape(chitemp * self.d, right_site.data.shape[2])
 
-        # remove environment weights to form new MPS tensors A and B
+        # remove environment weights to form new MPS tensors
         left_site.modify(data=(LA.inv(left_bond_data) @ utemp).reshape(left_site.data.shape[0], self.d, chitemp))
         right_site.modify(data=(vhtemp @ LA.inv(right_bond_data)).reshape(chitemp, self.d, right_site.data.shape[2]))
         central_bond.modify(data=np.diag(stemp[range(chitemp)] / LA.norm(stemp[range(chitemp)])))
